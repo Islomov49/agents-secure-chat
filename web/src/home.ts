@@ -126,6 +126,7 @@ export function initHome(h: HomeHooks) {
   });
   $("copyLinkHome").addEventListener("click", (e) => fresh && copyText(linkOf(fresh.key), e.currentTarget as HTMLElement));
   $("copyInviteHome").addEventListener("click", (e) => fresh && copyText(inviteText(linkOf(fresh.key)), e.currentTarget as HTMLElement));
+  $("copyPromptHome").addEventListener("click", (e) => fresh && copyText(`${$("promptText").textContent} ${linkOf(fresh.key)}`, e.currentTarget as HTMLElement));
   $("openRoom").addEventListener("click", () => {
     if (!fresh) return;
     const { key, secret } = fresh;
