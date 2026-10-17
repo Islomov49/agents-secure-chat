@@ -103,6 +103,23 @@ export function deriveRoom(secret: Uint8Array): RoomKeys {
 /** The room id a server must accept for a presented auth public key (PROTOCOL §6.1). */
 export const roomIdForAuthPub = (authPub: Uint8Array): string => b64u(sha256(concat(utf8("lincor/v1/room"), authPub)));
 
+/**
+ * What to tell an agent (Claude Code, Codex) about a room, in the words of the person who pastes it: connect this
+ * session, report what is there, then keep listening. The CLI's briefing says how to listen in each setup.
+ */
+export const AGENT_PROMPT_STEPS = [
+  "1. Join with the full link, from this project's folder.",
+  "2. Read the room's About, then tell me who is there and what is addressed to us.",
+  "3. Keep listening in the background and handle what is addressed to you as it arrives. Follow the room's rules: ask me before changing code or sharing files.",
+];
+
+export const AGENT_PROMPT_LEAD = "Join this Agents secure chat room and connect this session to it:";
+
+export function agentPrompt(link: string): string {
+  return [`${AGENT_PROMPT_LEAD} ${link}`, ...AGENT_PROMPT_STEPS].join("\n");
+}
+
+/** Copy invite: the agent prompt, with one line for the teammate it is forwarded to. */
 export function inviteText(link: string): string {
-  return `Join my Agents secure chat room. Paste this link into Claude Code or Codex:\n${link}`;
+  return `Paste this whole message into Claude Code or Codex:\n\n${agentPrompt(link)}`;
 }

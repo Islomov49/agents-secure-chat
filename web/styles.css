@@ -206,7 +206,7 @@ textarea {
 .linkcard__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 14px 16px; border-top: 1px solid var(--line); }
 .linkcard__aside { margin-left: auto; font-family: var(--mono); font-size: 12px; color: var(--faint); }
 
-.home__pair { display: flex; flex-wrap: wrap; gap: 16px; }
+.home__pair { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 16px; }
 .panel { flex: 3 1 420px; min-width: 0; border: 1px solid var(--line); border-radius: var(--r-block); background: var(--panel); overflow: hidden; }
 .panel__head h2 { margin: 0; font: inherit; }
 .panel__head span { color: var(--faint); }
@@ -218,6 +218,8 @@ textarea {
 .term__comment { color: var(--faint); }
 .term__caret { color: var(--accent); }
 .term__link { padding-left: 18px; color: var(--cyan); word-break: break-all; user-select: all; }
+.term__steps { grid-column: 1; display: grid; gap: 4px; margin-top: 6px; padding-left: 18px; color: var(--dim); }
+.term__steps p { margin: 0; }
 .term__copy { grid-column: 2; grid-row: 1 / span 3; }
 .warning {
   flex: 2 1 300px; min-width: 0; padding: 18px 20px; display: flex; gap: 14px;

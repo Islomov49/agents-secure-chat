@@ -70,7 +70,8 @@ export function claudePluginFiles(launch: Launch): Record<string, string> {
       null,
       2,
     ),
-    ".mcp.json": JSON.stringify({ mcpServers: { "agents-room": { command: launch.command, args: [...launch.args, "mcp"] } } }, null, 2),
+    // LINCOR_HOOKS tells the MCP server that hooks deliver messages, so the briefing says listening is already on.
+    ".mcp.json": JSON.stringify({ mcpServers: { "agents-room": { command: launch.command, args: [...launch.args, "mcp"], env: { LINCOR_HOOKS: "1" } } } }, null, 2),
     "hooks/hooks.json": JSON.stringify(
       {
         hooks: {
@@ -120,6 +121,7 @@ export function codexMcpToml(launch: Launch): string {
   return `[mcp_servers.agents-room]
 command = ${q(launch.command)}
 args = [${[...launch.args, "mcp"].map(q).join(", ")}]
+env = { LINCOR_HOOKS = "1" }
 tool_timeout_sec = 660
 startup_timeout_sec = 30
 `;

@@ -225,6 +225,23 @@ describe("lincor service", () => {
     await expect(offline.read()).rejects.toThrow(/fetch failed \(ENOTFOUND\)\. If you run in a sandbox .* allow 127\.0\.0\.1:\d+ in the app's settings \(Claude apps: Settings → Capabilities\), or open the link in a browser/);
   });
 
+  it("tells each agent how it listens in its setup (zero install, plugin, Codex, MCP only)", async () => {
+    const owner = dev("listen-owner");
+    const { link } = owner.lincor().create({ about: "Listening" }).data as { link: string };
+    await owner.lincor().send("hi");
+    const join = async (name: string, env: Record<string, string>, surface: "cli" | "mcp" = "cli") => {
+      const d = dev(name);
+      return (await new Lincor({ cwd: d.project, env: { ...d.env, ...env } as NodeJS.ProcessEnv, surface }).join(link, {})).text;
+    };
+    expect(await join("listen-cc", { LINCOR_CLIENT: "claude-code", LINCOR_SELF_COMMAND: "npx -y agents-room@9.9.9" })).toContain(
+      "- Listen: start `npx -y agents-room@9.9.9 wait --timeout 3600` as a background command (Bash run_in_background). Claude Code wakes you when it prints",
+    );
+    expect(await join("listen-codex", { LINCOR_CLIENT: "codex" })).toContain("- Listen: agents-room wait --timeout 600 blocks until something is addressed to you");
+    expect(await join("listen-plugin", { LINCOR_CLIENT: "claude-code", LINCOR_HOOKS: "1" }, "mcp")).toContain("- Listen: already on: messages addressed to you reach you between steps and wake this session when it is idle; nothing to run.");
+    expect(await join("listen-codex-mcp", { LINCOR_CLIENT: "codex", LINCOR_HOOKS: "1" }, "mcp")).toContain("Codex cannot be woken while idle");
+    expect(await join("listen-mcp-only", { LINCOR_CLIENT: "claude-code" }, "mcp")).toMatch(/- Listen: chat_wait blocks .* your user can install the integration: \S.* install claude-code\./);
+  });
+
   it("keeps the name and role given to join --no-intro for the first post (regression)", async () => {
     const owner = dev("nointro-owner");
     const { link } = owner.lincor().create().data as { link: string };
@@ -429,9 +446,9 @@ describe("integration files", () => {
     const hooks = JSON.parse(files["hooks/hooks.json"]).hooks;
     expect(Object.keys(hooks)).toEqual(["SessionStart", "UserPromptSubmit", "PostToolUse", "Stop"]);
     expect(hooks.Stop[0].hooks[1]).toMatchObject({ asyncRewake: true, command: "node /opt/lincor.js watch --rewake --timeout 3600" });
-    expect(JSON.parse(files[".mcp.json"]).mcpServers["agents-room"]).toEqual({ command: "node", args: ["/opt/lincor.js", "mcp"] });
+    expect(JSON.parse(files[".mcp.json"]).mcpServers["agents-room"]).toEqual({ command: "node", args: ["/opt/lincor.js", "mcp"], env: { LINCOR_HOOKS: "1" } });
     expect(files["skills/agents-room/SKILL.md"]).toMatch(/^---\nname: agents-room\ndescription: /);
-    expect(codexMcpToml({ command: "npx", args: ["-y", "agents-room@0.1.0"] })).toContain('args = ["-y", "agents-room@0.1.0", "mcp"]\ntool_timeout_sec = 660');
+    expect(codexMcpToml({ command: "npx", args: ["-y", "agents-room@0.1.0"] })).toContain('args = ["-y", "agents-room@0.1.0", "mcp"]\nenv = { LINCOR_HOOKS = "1" }\ntool_timeout_sec = 660');
   });
 
   it("installs into Codex config without clobbering other settings, and uninstalls", () => {

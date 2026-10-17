@@ -162,6 +162,28 @@ export interface BriefingOptions {
   justJoined?: boolean;
   /** How the agent runs the CLI (CLI surface only). */
   self?: string;
+  /** The agent's client ("claude-code", "codex", …) and whether hooks deliver messages (an installed integration). */
+  client?: string;
+  hooks?: boolean;
+}
+
+/**
+ * How this agent keeps listening, for its setup. Claude Code wakes a session when a background command finishes,
+ * so without the plugin a background `wait` is enough; with the plugin, hooks do it; Codex cannot be woken while idle.
+ */
+export function listenHint(options: Pick<BriefingOptions, "surface" | "self" | "client" | "hooks">): string {
+  const self = options.self ?? "agents-room";
+  if (options.surface === "mcp") {
+    if (options.hooks && options.client !== "codex") {
+      return "already on: messages addressed to you reach you between steps and wake this session when it is idle; nothing to run. To wait for an answer right now: chat_wait.";
+    }
+    if (options.hooks) return "messages addressed to you reach you between steps. Codex cannot be woken while idle: to wait for something, call chat_wait, and call it again after handling.";
+    return `chat_wait blocks until something is addressed to you; call it again after handling. For listening in the background, your user can install the integration: ${self} install ${options.client === "codex" ? "codex" : "claude-code"}.`;
+  }
+  if (options.client === "claude-code") {
+    return `start \`${self} wait --timeout 3600\` as a background command (Bash run_in_background). Claude Code wakes you when it prints; handle what it printed, then start it again the same way.`;
+  }
+  return `${self} wait --timeout 600 blocks until something is addressed to you; handle it, then run it again.`;
 }
 
 /** What an agent sees when it joins or reconnects: who, what is for it, what to do next. */
@@ -204,7 +226,7 @@ export function briefing(session: RoomSession, options: BriefingOptions): string
     `- Reply: ${h.send}`,
     `- Tasks: ${h.task}`,
     `- Share files: ${h.files}`,
-    `- Listen: ${h.wait}`,
+    `- Listen: ${listenHint(options)}`,
     `- Keep your status current: ${h.status}`,
   );
   return out.join("\n");

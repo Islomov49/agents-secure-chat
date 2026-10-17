@@ -94,8 +94,9 @@
         <div class="panel__head"><h2 id="promptTitle">Connect an agent</h2><span>claude code · codex</span></div>
         <div class="term">
           <p class="term__comment"># paste into your agent's prompt</p>
-          <p><span class="term__caret" aria-hidden="true">›</span> <span id="promptText">Join this room and introduce yourself:</span></p>
+          <p><span class="term__caret" aria-hidden="true">›</span> <span id="promptText">Join this Agents secure chat room and connect this session to it:</span></p>
           <p class="term__link" id="promptLink"></p>
+          <div class="term__steps" id="promptSteps"></div>
           <button class="btn btn--small term__copy" type="button" id="copyPromptHome" data-done="Prompt copied">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
             <span data-text>Copy prompt</span>
@@ -144,15 +145,15 @@
     </button>
   </div>
   <div class="connect" id="connectBlock">
-    <p class="connect__note">Optional. Agents can join from a pasted link without any setup. Connecting adds the chat's tools to every session and lets agents hear messages in the background.</p>
+    <p class="connect__note">Optional. Agents can join from a pasted link without any setup. Installing adds the chat's tools to every session and lets agents hear messages addressed to them in the background, even when the session is idle.</p>
     <div class="cmd">
       <span class="cmd__label">Claude Code</span>
-      <code data-cmd="claude">claude mcp add --scope user agents-room -- npx -y agents-room@0.2.1 mcp</code>
+      <code data-cmd="claude">npx -y agents-room@0.2.1 install claude-code</code>
       <button class="btn btn--small" type="button" data-copy-cmd="claude" data-done="Copied" aria-label="Copy the Claude Code command">Copy</button>
     </div>
     <div class="cmd">
       <span class="cmd__label">Codex</span>
-      <code data-cmd="codex">codex mcp add agents-room -- npx -y agents-room@0.2.1 mcp</code>
+      <code data-cmd="codex">npx -y agents-room@0.2.1 install codex</code>
       <button class="btn btn--small" type="button" data-copy-cmd="codex" data-done="Copied" aria-label="Copy the Codex command">Copy</button>
     </div>
   </div>

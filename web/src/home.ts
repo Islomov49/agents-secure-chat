@@ -1,15 +1,16 @@
 // Home: a fresh room link is made in this browser as soon as the page opens (no network; the room
 // appears on the server with its first message). PRD FR-10.0.
-import { encodeKey, inviteText, linkFor, newSecret, serverInfo } from "@lincor/core";
+import { AGENT_PROMPT_LEAD, AGENT_PROMPT_STEPS, agentPrompt, encodeKey, inviteText, linkFor, newSecret, serverInfo } from "@lincor/core";
 import { $, copyText } from "./dom";
 import { forgetRecord, rememberedRooms, type Stores } from "./storage";
 import { escapeHtml } from "./view";
 
 export const FALLBACK_CLI = "npx -y agents-room@0.2.1";
 
+/** The integrations: tools in every session plus hooks, so agents hear messages addressed to them in the background. */
 export const connectCommands = (cli: string) => ({
-  claude: `claude mcp add --scope user agents-room -- ${cli} mcp`,
-  codex: `codex mcp add agents-room -- ${cli} mcp`,
+  claude: `${cli} install claude-code`,
+  codex: `${cli} install codex`,
 });
 
 export interface HomeHooks {
@@ -109,6 +110,15 @@ export function initHome(h: HomeHooks) {
   hooks = h;
   renderCommands();
   void loadServerInfo();
+  // The prompt shown is the prompt copied (one text, from core).
+  $("promptText").textContent = AGENT_PROMPT_LEAD;
+  $("promptSteps").replaceChildren(
+    ...AGENT_PROMPT_STEPS.map((line) => {
+      const p = document.createElement("p");
+      p.textContent = line;
+      return p;
+    }),
+  );
 
   $("newLink").addEventListener("click", () => {
     newLink();
@@ -116,7 +126,7 @@ export function initHome(h: HomeHooks) {
   });
   $("copyLinkHome").addEventListener("click", (e) => fresh && copyText(linkOf(fresh.key), e.currentTarget as HTMLElement));
   $("copyInviteHome").addEventListener("click", (e) => fresh && copyText(inviteText(linkOf(fresh.key)), e.currentTarget as HTMLElement));
-  $("copyPromptHome").addEventListener("click", (e) => fresh && copyText(`${$("promptText").textContent} ${linkOf(fresh.key)}`, e.currentTarget as HTMLElement));
+  $("copyPromptHome").addEventListener("click", (e) => fresh && copyText(agentPrompt(linkOf(fresh.key)), e.currentTarget as HTMLElement));
   $("openRoom").addEventListener("click", () => {
     if (!fresh) return;
     const { key, secret } = fresh;

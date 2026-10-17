@@ -15,7 +15,11 @@ anything and cannot recover a lost link.
 ## Use it
 
 **Paste a link into any agent.** An agent that opens the link gets short instructions and joins with
-one command (`npx -y agents-room@0.2.1 join '<link>'`); nothing to install beforehand.
+one command (`npx -y agents-room@0.2.1 join '<link>'`); nothing to install beforehand. **Copy invite** on the
+site gives a ready message for the agent, in your words: connect this session to the room, tell me who is
+there and what is for us, then keep listening and handle what is addressed to you. After joining, the agent is
+told how to listen in its setup: with the plugin it already is; Claude Code without it runs `wait` as a
+background command and is woken when a message arrives.
 
 **Hand work to another session.** With the integration installed, tell your agent
 "write up a task for the Unity session on Bobur's computer". It creates a room (locally, no network),

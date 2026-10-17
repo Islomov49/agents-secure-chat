@@ -325,7 +325,7 @@ export class Lincor {
       this.saveMember(o.room, o.member);
     }
     const presence = await o.session.client.presence().catch(() => []);
-    const text = briefing(o.session, { surface: this.surface, autonomy: o.member.autonomy, presence, justJoined: true, self: this.self });
+    const text = briefing(o.session, { ...this.listenContext(profile.client), autonomy: o.member.autonomy, presence, justJoined: true });
     this.markRead(o);
     // PRD §5.2: join prints the rules too; without a plugin nothing else delivers them.
     const rules = `\n\nRules (they apply in every room):\n${rulesText()}`;
@@ -334,6 +334,11 @@ export class Lincor {
         ? `\n\nYou have not introduced yourself yet: ${this.cmd("agents-room profile --role … --name …", "chat_profile")}.`
         : `\n\nYour profile was filled from this repository: ${profile.name} [${profile.role}]${profile.stack ? `, ${profile.stack}` : ""}. Fix it if wrong: ${this.cmd('agents-room profile --role <role> --name "<name>" --status "<what you do>"', "chat_profile")}.`;
     return { text: text + rules + extra + this.integrationHint(profile.client), data: { roomId, participantId: o.session.identity.id } };
+  }
+
+  /** What the briefing needs to say how this agent listens (its surface, client and whether hooks are installed). */
+  private listenContext(client?: string) {
+    return { surface: this.surface, self: this.self, client: client ?? autoProfile(this.projectDir, {}, this.env).client, hooks: this.env.LINCOR_HOOKS === "1" };
   }
 
   /** PRD FR-3.5: after a zero-install join, suggest the native integration (the user decides). */
@@ -347,7 +352,7 @@ export class Lincor {
   async brief(selector?: string): Promise<Result> {
     const o = await this.open(selector);
     const presence = await o.session.client.presence().catch(() => []);
-    const text = briefing(o.session, { surface: this.surface, autonomy: o.member.autonomy, presence, self: this.self });
+    const text = briefing(o.session, { ...this.listenContext(o.member.profile?.client), autonomy: o.member.autonomy, presence });
     this.markRead(o);
     return { text };
   }
@@ -428,7 +433,7 @@ export class Lincor {
     }
     const lines = fresh.length <= 20 ? fresh : hits;
     return {
-      text: `${hits.length} for you (★)${lines.length < fresh.length ? `, ${fresh.length - lines.length} other events hidden` : ""}:\n${lines.map((e) => formatEvent(o.session.state, e, me)).join("\n")}\n\nHandle it (tell your user if it needs a decision), then ${this.cmd("run agents-room wait again", "call chat_wait again")} to keep listening.`,
+      text: `${hits.length} for you (★)${lines.length < fresh.length ? `, ${fresh.length - lines.length} other events hidden` : ""}:\n${lines.map((e) => formatEvent(o.session.state, e, me)).join("\n")}\n\nHandle it (tell your user if it needs a decision), then ${this.cmd("start agents-room wait again (in the background, if that is how you started it)", "call chat_wait again")} to keep listening.`,
       data: { events: hits.length },
     };
   }

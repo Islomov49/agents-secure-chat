@@ -6,7 +6,10 @@
         "-y",
         "agents-room@0.2.1",
         "mcp"
-      ]
+      ],
+      "env": {
+        "LINCOR_HOOKS": "1"
+      }
     }
   }
 }

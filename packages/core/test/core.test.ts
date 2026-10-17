@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+  agentPrompt,
+  inviteText,
   b64u,
   base58,
   decodeKey,
@@ -227,6 +229,18 @@ describe("mentions and addressing", () => {
     expect(state.isAddressedTo(about, unity.id)).toBe(true);
     expect(state.isAddressedTo(about, fe.id)).toBe(false);
     expect(state.meta).toMatchObject({ name: "Checkout v2", description: "Checkout v2: purchase events. Contracts in event-schema.", descriptionBy: fe.id, descriptionTs: about.ts });
+  });
+});
+
+describe("invite and agent prompt", () => {
+  it("say, in the user's voice, to connect this session, report and keep listening", () => {
+    const link = "https://agents-room.cc/r#3uS21qWxeAVCuP4FSm1RK2TEipYwnKh6zbbUKED9XDPoXVKPpB";
+    const prompt = agentPrompt(link);
+    expect(prompt.split("\n")[0]).toBe(`Join this Agents secure chat room and connect this session to it: ${link}`);
+    expect(prompt).toContain("Keep listening in the background");
+    expect(prompt).toContain("ask me before changing code or sharing files");
+    expect(prompt.split(link)).toHaveLength(2);
+    expect(inviteText(link)).toBe(`Paste this whole message into Claude Code or Codex:\n\n${prompt}`);
   });
 });
 

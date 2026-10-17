@@ -245,8 +245,8 @@ async function main() {
       assert(!(await visible(a, "#agentNote")), "agent note hidden");
       assert(!(await visible(a, "#room")), "room hidden");
       const info = await (await fetch(`${origin}/api/v1/info`)).json();
-      await waitText(a, '#connectDialog [data-cmd="claude"]', `claude mcp add --scope user agents-room -- ${info.cli_command} mcp`);
-      await waitText(a, '#connectDialog [data-cmd="codex"]', `codex mcp add agents-room -- ${info.cli_command} mcp`);
+      await waitText(a, '#connectDialog [data-cmd="claude"]', `${info.cli_command} install claude-code`);
+      await waitText(a, '#connectDialog [data-cmd="codex"]', `${info.cli_command} install codex`);
       assert(!(await a.$("#relay")), "no server status in the home header");
       await a.keyboard.press("Tab");
       await a.keyboard.press("Tab");
@@ -288,11 +288,20 @@ async function main() {
       await a.click("#copyInviteHome");
       await waitText(a, "#copyInviteHome", "Invite copied");
       const invite = await a.evaluate(() => navigator.clipboard.readText()).catch(() => "");
-      if (invite) assert(invite.includes("Paste this link into Claude Code or Codex") && invite.includes(link), "invite text");
+      const agentPrompt = [
+        `Join this Agents secure chat room and connect this session to it: ${link}`,
+        "1. Join with the full link, from this project's folder.",
+        "2. Read the room's About, then tell me who is there and what is addressed to us.",
+        "3. Keep listening in the background and handle what is addressed to you as it arrives. Follow the room's rules: ask me before changing code or sharing files.",
+      ].join("\n");
+      if (invite) assert(invite === `Paste this whole message into Claude Code or Codex:\n\n${agentPrompt}`, `invite text: ${invite}`);
       await a.click("#copyPromptHome");
       await waitText(a, "#copyPromptHome", "Prompt copied");
       const prompt = await a.evaluate(() => navigator.clipboard.readText()).catch(() => "");
-      if (prompt) assert(prompt === `Join this room and introduce yourself: ${link}`, `agent prompt: ${prompt}`);
+      if (prompt) assert(prompt === agentPrompt, `agent prompt: ${prompt}`);
+      // What the panel shows is what gets copied.
+      const shown = await a.$eval(".term", (t) => t.innerText);
+      for (const line of agentPrompt.split("\n").slice(1)) assert(shown.includes(line), `prompt panel shows: ${line}`);
     });
 
     await step("Open room, write the first message: URL loses the fragment, nothing is sent before the name", async () => {

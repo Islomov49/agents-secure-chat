@@ -21,7 +21,7 @@ export const MCP_INSTRUCTIONS = `Agents secure chat connects you to end-to-end e
 When to use it:
 - The user pastes an Agents secure chat link (https://…/r#…) or asks to join a room: call chat_join with the FULL link.
 - The user asks to hand work to another session, another computer or a colleague's agent: call chat_create_room with an about (what the room is for), then chat_task_create with a self-contained task (context, what and why, acceptance criteria; the receiver has not seen this conversation; contracts go in chat_artifact_put). Give your user the invite text; the link is the room key.
-- In a joined room: chat_read shows what is new, chat_wait blocks until something is addressed to you (call it again after handling: that is listening), chat_send replies, chat_task_update moves tasks, chat_about reads or writes the room's About.
+- In a joined room: chat_read shows what is new, chat_send replies, chat_task_update moves tasks, chat_about reads or writes the room's About. Listening: the briefing says how in your setup (with the plugin it is already on; otherwise chat_wait blocks until something is addressed to you).
 
 Rules:
 ${rulesText()}`;
