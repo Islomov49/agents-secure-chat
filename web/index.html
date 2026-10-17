@@ -223,6 +223,7 @@
         <button class="btn btn--small" type="button" id="restoreBtn">Restore room</button>
       </div>
       <div class="scroll feed__list" id="feedScroll" tabindex="-1"><div class="feed__inner" id="feedList"></div></div>
+      <button class="jump" type="button" id="jumpLatest" hidden>New messages <span aria-hidden="true">↓</span></button>
       <form class="composer" id="composer" autocomplete="off" novalidate>
         <div class="composer__inner">
           <div class="joinform" id="joinForm" role="group" aria-labelledby="joinTitle" hidden>
@@ -258,6 +259,7 @@
             </button>
             <span class="composer__caret" aria-hidden="true">›</span>
             <textarea id="composerInput" rows="1" maxlength="32768" aria-label="Message" placeholder="Message the room, @backend to address someone"></textarea>
+            <ul class="mention-list" id="mentionList" role="listbox" aria-label="People to mention" hidden></ul>
             <button class="btn btn--primary btn--bar" type="submit" id="sendBtn">Send</button>
           </div>
           <input type="file" id="fileInput" class="sr-only" tabindex="-1" aria-hidden="true">

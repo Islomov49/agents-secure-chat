@@ -405,7 +405,21 @@ dialog::backdrop { background: rgba(3, 5, 4, 0.72); }
   color: var(--alert); font-size: 14px;
 }
 .banner p { margin: 0; flex: 1 1 16rem; }
-.feed__list { grid-row: 2; padding: 8px 20px 16px; display: flex; flex-direction: column; }
+.feed { position: relative; }
+.feed__list { grid-row: 2; grid-column: 1; padding: 8px 20px 16px; display: flex; flex-direction: column; }
+.jump {
+  grid-row: 2; grid-column: 1; align-self: end; justify-self: center; z-index: 2; margin-bottom: 12px;
+  display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 14px;
+  border: 0; border-radius: var(--r-control); background: var(--accent); color: var(--accent-ink);
+  font-family: var(--mono); font-size: 12px; font-weight: 600; cursor: pointer; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+.jump:hover { background: var(--accent-hover); }
+/* A file dragged over the room: drop it anywhere to attach. */
+.room.is-drop .feed::after {
+  content: "Drop to attach · encrypted on this device"; position: absolute; inset: 10px; z-index: 6; pointer-events: none;
+  display: grid; place-items: center; border: 2px dashed var(--accent); border-radius: var(--r-block);
+  background: rgba(10, 12, 11, 0.86); font-family: var(--mono); font-size: 14px; color: var(--accent);
+}
 .feed__inner { max-width: 860px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 2px; }
 .day {
   display: flex; align-items: center; gap: 12px; padding: 16px 0 8px;
@@ -448,6 +462,16 @@ dialog::backdrop { background: rgba(3, 5, 4, 0.72); }
   overflow-x: auto; line-height: 1.55; white-space: pre;
 }
 .msg__body pre code { background: none; border: 0; padding: 0; font-size: 12.5px; }
+.msg__body pre, .task-card__desc pre { position: relative; }
+.pre__copy {
+  position: absolute; top: 6px; right: 6px; padding: 2px 8px; user-select: none; cursor: pointer;
+  border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--panel-head);
+  font-family: var(--mono); font-size: 11px; color: var(--dim); opacity: 0; transition: opacity 120ms ease;
+}
+.pre__copy:hover { color: var(--text); border-color: var(--line-hover); }
+pre:hover > .pre__copy, .pre__copy:focus-visible, .pre__copy.is-done { opacity: 1; }
+.pre__copy.is-done { color: var(--accent); border-color: var(--accent-line); }
+@media (hover: none) { .pre__copy { opacity: 1; } }
 .msg__body a, .task-card__desc a { color: var(--cyan); }
 .mention { color: var(--cyan); font-weight: 600; }
 .mention--me { color: var(--amber); }
@@ -520,7 +544,29 @@ dialog::backdrop { background: rgba(3, 5, 4, 0.72); }
   display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: end; gap: 8px;
   padding: 6px 6px 6px 8px; border: 1px solid var(--line-strong); border-radius: var(--r-block); background: var(--panel);
 }
+.composer__box { position: relative; }
 .composer__box:focus-within { border-color: var(--line-hover); }
+.mention-list {
+  position: absolute; left: 0; bottom: calc(100% + 6px); z-index: 5; width: min(460px, 100%);
+  max-height: min(296px, 40dvh); overflow-y: auto; margin: 0; padding: 4px; list-style: none;
+  border: 1px solid var(--line-strong); border-radius: var(--r-block); background: var(--panel);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+.mention-opt {
+  display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 10px;
+  padding: 6px 8px; border-radius: var(--r-control); cursor: pointer;
+}
+.mention-opt[aria-selected="true"] { background: var(--raised); }
+.mention-opt .avatar { width: 28px; height: 28px; font-size: 12px; }
+.mention-opt .avatar::after { display: none; }
+.mention-opt__mark {
+  width: 28px; height: 28px; display: grid; place-items: center;
+  border: 1px solid var(--line-strong); border-radius: var(--r-control); font-family: var(--mono); font-size: 13px; color: var(--dim);
+}
+.mention-opt__main { display: flex; align-items: baseline; gap: 8px; min-width: 0; overflow: hidden; }
+.mention-opt__label { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.mention-opt__handle { font-family: var(--mono); font-size: 12px; color: var(--cyan); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
+.mention-opt__detail { max-width: 12rem; font-family: var(--mono); font-size: 11.5px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .composer__caret { align-self: start; font-family: var(--mono); font-size: 14px; line-height: 40px; color: var(--accent); }
 .composer__box textarea {
   border: 0; background: transparent; padding: 10px 0; max-height: 30vh;
@@ -647,6 +693,7 @@ dialog::backdrop { background: rgba(3, 5, 4, 0.72); }
 }
 @media (max-width: 420px) {
   .bar__sep { display: none; }
+  .mention-opt__detail { display: none; }
   .bar__actions { gap: 4px; }
   .bar .invite { padding: 0 10px; font-size: 12px; }
   .bar .invite svg { display: none; }

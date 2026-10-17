@@ -1,4 +1,4 @@
-import { RoomState, type RoomEvent } from "@lincor/core";
+import { RoomState, shortId, type RoomEvent } from "@lincor/core";
 import { describe, expect, it } from "vitest";
 import {
   activityText,
@@ -12,6 +12,9 @@ import {
   formatBytes,
   hasConversation,
   initialOf,
+  insertMention,
+  mentionOptions,
+  mentionQuery,
   parseTaskInput,
   presenceView,
   renderText,
@@ -224,5 +227,58 @@ describe("feedItems", () => {
     const state = new RoomState();
     expect(hasConversation(feedItems(state, undefined))).toBe(false);
     expect(roomTitle(state)).toBe("Untitled room");
+  });
+});
+
+describe("@mention suggestions", () => {
+  it("finds the mention being typed at the caret", () => {
+    expect(mentionQuery("hi @", 4)).toEqual({ start: 3, query: "" });
+    expect(mentionQuery("@ali", 4)).toEqual({ start: 0, query: "ali" });
+    expect(mentionQuery("hi @bob and", 7)).toEqual({ start: 3, query: "bob" });
+    expect(mentionQuery("hi @bob and", 11)).toBeNull();
+    expect(mentionQuery("mail me@example.com", 19)).toBeNull();
+    expect(mentionQuery("(@front", 7)).toEqual({ start: 1, query: "front" });
+  });
+
+  it("offers people by name, shared or distinct roles, and @all, without the viewer", () => {
+    seq = 0;
+    const state = new RoomState();
+    const ME = "MMMMMMMMMMMMMMMMMMMMMM";
+    const A = "AAAAAAAAAAAAAAAAAAAAAA";
+    const B = "BBBBBBBBBBBBBBBBBBBBBB";
+    const C = "CCCCCCCCCCCCCCCCCCCCCC";
+    state.apply(ev(ME, "join", { profile: { name: "Kamola", role: "team lead", client: "browser", kind: "human" } }));
+    state.apply(ev(A, "join", { profile: { name: "Ali's frontend agent", role: "frontend", client: "claude-code", kind: "agent" } }));
+    state.apply(ev(B, "join", { profile: { name: "Bobur", role: "frontend", client: "browser", kind: "human" } }));
+    state.apply(ev(C, "join", { profile: { name: "Unity", role: "unity", client: "codex", kind: "agent" } }));
+
+    const all = mentionOptions(state, ME, "");
+    expect(all.map((o) => `${o.kind}:${o.handle}`)).toEqual(["person:ali-s-frontend-agent", "person:bobur", "person:unity", "role:frontend", "all:all"]);
+    expect(all[0]).toMatchObject({ label: "Ali's frontend agent", detail: "frontend · Claude Code", initial: "A", human: false });
+    expect(all.find((o) => o.kind === "role")?.detail).toBe("role · 2 people");
+
+    // Prefix of the handle first, then a word of the name or the role.
+    expect(mentionOptions(state, ME, "fro").map((o) => o.handle)).toEqual(["frontend", "ali-s-frontend-agent", "bobur"]);
+    expect(mentionOptions(state, ME, "BO").map((o) => o.handle)).toEqual(["bobur"]);
+    expect(mentionOptions(state, ME, "e").map((o) => o.handle)).toEqual(["everyone"]);
+    expect(mentionOptions(state, ME, "kam")).toEqual([]); // not yourself
+  });
+
+  it("uses the fingerprint when two people share a name", () => {
+    seq = 0;
+    const state = new RoomState();
+    const A = "AAAAAAAAAAAAAAAAAAAAAA";
+    const B = "BBBBBBBBBBBBBBBBBBBBBB";
+    state.apply(ev(A, "join", { profile: { name: "Agent", role: "backend", client: "codex", kind: "agent" } }));
+    state.apply(ev(B, "join", { profile: { name: "Agent", role: "backend", client: "codex", kind: "agent" } }));
+    const people = mentionOptions(state, undefined, "").filter((o) => o.kind === "person");
+    expect(people.map((o) => o.handle)).toEqual([shortId(A).toLowerCase(), shortId(B).toLowerCase()]);
+    expect(people[0].label).toMatch(/^Agent · /);
+  });
+
+  it("inserts the handle with one space after it", () => {
+    expect(insertMention("hi @bo", 3, 6, "bobur")).toEqual({ text: "hi @bobur ", caret: 10 });
+    expect(insertMention("hi @bo there", 3, 6, "bobur")).toEqual({ text: "hi @bobur there", caret: 10 });
+    expect(insertMention("@b please", 0, 2, "bobur")).toEqual({ text: "@bobur please", caret: 7 });
   });
 });
