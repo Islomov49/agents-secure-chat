@@ -38,35 +38,55 @@ async function loadServerInfo() {
     const info = await serverInfo(location.origin);
     if (typeof info.cli_command === "string" && info.cli_command.trim()) cliCommand = info.cli_command.trim();
     showSource(info.source_url);
+    showRelay(true);
   } catch {
     cliCommand = FALLBACK_CLI;
+    showRelay(false);
   }
   renderCommands();
 }
 
-/** Links "Open source" to the repository the server is configured with (LINCOR_SOURCE_URL). */
+/** Links "GitHub" and "Open source" to the repository the server is configured with (LINCOR_SOURCE_URL). */
 function showSource(url: unknown) {
-  const link = $<HTMLAnchorElement>("sourceLink");
-  if (typeof url === "string" && /^https?:\/\//.test(url)) {
-    link.href = url;
-    link.hidden = false;
-  } else link.hidden = true;
+  const ok = typeof url === "string" && /^https?:\/\//.test(url);
+  document.querySelectorAll<HTMLAnchorElement>("[data-source-link]").forEach((link) => {
+    if (ok) link.href = url;
+    link.hidden = !ok;
+  });
+}
+
+/** Whether this server answered /api/v1/info. */
+function showRelay(online: boolean) {
+  const relay = $("relay");
+  relay.textContent = online ? "relay online" : "relay unreachable";
+  relay.dataset.state = online ? "online" : "offline";
+  relay.hidden = false;
 }
 
 const linkOf = (key: string) => linkFor(location.origin, key);
+
+/** The link with its parts marked: the route reaches the server, the key after # never does. */
+function showLink(link: string) {
+  const el = $("linkText");
+  const at = link.indexOf("#");
+  const part = (cls: string, text: string) => Object.assign(document.createElement("span"), { className: cls, textContent: text });
+  el.replaceChildren(part("url__route", link.slice(0, at)), part("url__hash", "#"), part("url__key", link.slice(at + 1)));
+  el.title = link;
+  $("promptLink").textContent = link;
+}
 
 /** Makes a new link locally and shows it. */
 function newLink() {
   const secret = newSecret();
   fresh = { key: encodeKey(secret), secret };
-  $("linkText").textContent = linkOf(fresh.key);
-  $("linkText").title = linkOf(fresh.key);
+  showLink(linkOf(fresh.key));
 }
 
 /** Forgets the shown link (after it was opened, or to start over). */
 export function resetHome() {
   fresh = null;
   $("linkText").textContent = "";
+  $("promptLink").textContent = "";
 }
 
 function renderRooms() {

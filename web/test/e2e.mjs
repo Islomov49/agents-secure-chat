@@ -133,8 +133,11 @@ async function shot(page, name) {
   await page.screenshot({ path: join(SHOTS, `${name}.png`) });
 }
 
-/** The document must never scroll (FR-12.2); measured with overflow released, like the prototype's ?check. */
-async function noPageScroll(page, label) {
+/**
+ * The room never scrolls as a page (FR-12.2): measured with overflow released, like the prototype's ?check.
+ * Home is an ordinary page that may scroll down, but never sideways ({ vertical: false }).
+ */
+async function noPageScroll(page, label, { vertical = true } = {}) {
   const m = await page.evaluate(() => {
     const d = document.documentElement;
     const b = document.body;
@@ -142,14 +145,14 @@ async function noPageScroll(page, label) {
     d.style.overflow = "visible";
     b.style.overflow = "visible";
     const r = { sh: d.scrollHeight, sw: d.scrollWidth, ih: innerHeight, iw: innerWidth };
-    const clipped = [...document.querySelectorAll(".home__top, .home__body, .room, .bar, .composer, .nav, .feed, .people, .side")]
+    const clipped = [...document.querySelectorAll(".home__top, .home__body, .home__foot, .linkcard, .room, .bar, .composer, .nav, .feed, .people, .side")]
       .filter((el) => el.getClientRects().length > 0)
-      .filter((el) => el.scrollWidth > el.clientWidth + 1 || (el.matches(".home__body") && el.scrollHeight > el.clientHeight + 1))
+      .filter((el) => el.scrollWidth > el.clientWidth + 1)
       .map((el) => `${el.className}: ${el.scrollWidth}x${el.scrollHeight} in ${el.clientWidth}x${el.clientHeight}`);
     [d.style.overflow, b.style.overflow] = prev;
     return { ...r, clipped };
   });
-  assert(m.sh <= m.ih, `${label}: page scrolls vertically (${m.sh} > ${m.ih})`);
+  if (vertical) assert(m.sh <= m.ih, `${label}: page scrolls vertically (${m.sh} > ${m.ih})`);
   assert(m.sw <= m.iw, `${label}: page scrolls horizontally (${m.sw} > ${m.iw})`);
   assert(m.clipped.length === 0, `${label}: content overflows its container: ${m.clipped.join("; ")}`);
 }
@@ -238,6 +241,7 @@ async function main() {
       const info = await (await fetch(`${origin}/api/v1/info`)).json();
       await waitText(a, '#connectDialog [data-cmd="claude"]', `claude mcp add --scope user agents-room -- ${info.cli_command} mcp`);
       await waitText(a, '#connectDialog [data-cmd="codex"]', `codex mcp add agents-room -- ${info.cli_command} mcp`);
+      await waitText(a, "#relay", "relay online");
       await a.keyboard.press("Tab");
       await a.keyboard.press("Tab");
       const focus = await a.evaluate(() => {
@@ -253,6 +257,12 @@ async function main() {
       key = shown.slice(shown.indexOf("#") + 1);
       assert(key.length >= 48 && key.length <= 52, `key length ${key.length}`);
       parseLink(shown); // valid checksum
+      const parts = await a.evaluate(() => ({
+        key: document.querySelector("#linkText .url__key")?.textContent,
+        hash: document.querySelector("#linkText .url__hash")?.textContent,
+        prompt: document.getElementById("promptLink")?.textContent,
+      }));
+      assert(parts.key === key && parts.hash === "#" && parts.prompt === shown, `link parts and agent prompt: ${JSON.stringify(parts)}`);
       assert(roomRequests.length === 0, `no room requests yet: ${roomRequests.join(", ")}`);
       await waitText(a, ".warning", "can recover it");
       await a.click("#newLink");
@@ -597,7 +607,7 @@ async function main() {
       assert(await visible(b, ".feed"), "back to chat");
     });
 
-    await step("No page scroll at any size: home and room", async () => {
+    await step("No page scroll in the room at any size, no sideways scroll on home", async () => {
       const ctxC = await browser.createBrowserContext();
       const c = await ctxC.newPage();
       watch(c, "C");
@@ -606,8 +616,9 @@ async function main() {
         await c.setViewport({ width: w, height: h });
         await c.goto(`${origin}/`, { waitUntil: "networkidle0" });
         await c.evaluate(() => document.fonts.ready);
-        await noPageScroll(c, `home ${size}`);
+        await noPageScroll(c, `home ${size}`, { vertical: false });
         await shot(c, `home-${size}`);
+        await c.screenshot({ path: join(SHOTS, `home-full-${size}.png`), fullPage: true });
 
         await a.setViewport({ width: w, height: h });
         await sleep(300);

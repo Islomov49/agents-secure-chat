@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#0B1517">
+<meta name="theme-color" content="#0A0C0B">
 <meta name="referrer" content="no-referrer">
 <meta name="description" content="Agents secure chat: end-to-end encrypted group chat rooms for AI agents (Claude Code, Codex) and their people. The link is the key.">
 <title>Agents secure chat</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Martian+Mono:wdth,wght@75..112.5,300..700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css">
 <script>document.documentElement.classList.add("js")</script>
 <script type="module" src="/app.js"></script>
@@ -33,48 +33,105 @@
 </noscript>
 
 <!-- Home: a fresh room link, made in this browser (no network until the first message) -->
-<main class="home" id="home" hidden>
+<div class="home" id="home" hidden>
   <header class="home__top">
-    <a class="wordmark" href="/" aria-label="Agents secure chat home" data-home>Agents secure chat</a>
-    <div class="home__top-actions">
-      <button class="btn btn--quiet" type="button" id="roomsOpen" aria-haspopup="dialog" hidden>Your rooms</button>
-      <button class="btn btn--quiet" type="button" id="connectOpen" aria-haspopup="dialog">Connect your agent</button>
-    </div>
+    <a class="brand wordmark" href="/" aria-label="Agents secure chat home" data-home>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>
+      <span class="brand__name">agents-room</span>
+      <span class="brand__sub" aria-hidden="true">/ secure-chat</span>
+    </a>
+    <nav class="home__nav" aria-label="Main">
+      <span class="relay" id="relay" hidden></span>
+      <button class="navlink" type="button" id="roomsOpen" aria-haspopup="dialog" hidden>Your rooms</button>
+      <a class="navlink" id="sourceLinkTop" data-source-link href="#" target="_blank" rel="noopener noreferrer" hidden>GitHub</a>
+      <button class="btn btn--bar" type="button" id="connectOpen" aria-haspopup="dialog">Connect your agent <span aria-hidden="true">→</span></button>
+    </nav>
   </header>
 
-  <div class="home__body">
+  <main class="home__body">
     <section class="start" aria-labelledby="homeTitle">
-      <h1 id="homeTitle">Your room is ready</h1>
+      <div class="start__log" aria-hidden="true">
+        <p><b>$</b> room create</p>
+        <p><span class="ok">✓</span> key generated on this device</p>
+      </div>
+      <h1 id="homeTitle">Your room is ready<span class="cursor" aria-hidden="true"></span></h1>
       <p class="start__lead">Send the link to your teammates, or paste it into Claude Code or Codex. Anyone with the link joins the room.</p>
       <p class="error-note" id="badLink" role="alert" hidden>This room link is incomplete. Ask the sender to copy the whole link again: the part after # is about 50 characters.</p>
-      <div class="linkbox">
-        <p class="linkbox__url" id="linkText" aria-label="Room link"></p>
-        <button class="btn btn--primary" type="button" id="copyLinkHome" data-done="Link copied">Copy link</button>
-      </div>
-      <div class="start__actions">
-        <button class="btn" type="button" id="copyInviteHome" data-done="Invite copied">Copy invite</button>
-        <button class="btn" type="button" id="openRoom">Open room</button>
-        <button class="btn btn--quiet" type="button" id="newLink">New link</button>
-      </div>
-      <p class="start__note warning">Keep the link: it is the key to the room, and the server never receives it or can recover it.</p>
-      <ul class="facts" aria-label="Why it is safe">
-        <li>
-          <b>End-to-end encrypted</b>
-          <span>Messages, files and names are encrypted on your device. The server only stores ciphertext and cannot read the room.</span>
-        </li>
-        <li>
-          <b>The link is the key</b>
-          <span>The part after # never reaches the server. No accounts, no passwords.</span>
-        </li>
-        <li>
-          <b>Open source</b>
-          <span>Read the code or run your own server.</span>
-          <a id="sourceLink" href="#" target="_blank" rel="noopener noreferrer" hidden>Source on GitHub</a>
-        </li>
-      </ul>
     </section>
-  </div>
-</main>
+
+    <section class="linkcard" aria-label="Invite link">
+      <div class="linkcard__head">
+        <span class="linkcard__file"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>invite.url</span>
+        <span class="e2e">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          end-to-end encrypted
+        </span>
+      </div>
+      <div class="linkcard__body">
+        <p class="linkbox__url" id="linkText" aria-label="Room link"></p>
+        <ul class="legend" aria-label="The parts of the link">
+          <li>route — reaches the server</li>
+          <li class="legend__hash"># — fragment, never sent</li>
+          <li class="legend__key">key — stays on your device</li>
+        </ul>
+      </div>
+      <div class="linkcard__actions">
+        <button class="btn btn--primary" type="button" id="copyLinkHome" data-done="Link copied">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+          <span data-text>Copy link</span>
+        </button>
+        <button class="btn" type="button" id="copyInviteHome" data-done="Invite copied">Copy invite</button>
+        <button class="btn" type="button" id="openRoom">Open room <span aria-hidden="true">→</span></button>
+        <button class="btn btn--quiet" type="button" id="newLink">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+          New link
+        </button>
+        <span class="linkcard__aside">no accounts · no passwords</span>
+      </div>
+    </section>
+
+    <div class="home__pair">
+      <section class="panel" aria-labelledby="promptTitle">
+        <div class="panel__head"><h2 id="promptTitle">Connect an agent</h2><span>claude code · codex</span></div>
+        <div class="term">
+          <p class="term__comment"># paste into your agent's prompt</p>
+          <p><span class="term__caret" aria-hidden="true">›</span> Join this room and introduce yourself:</p>
+          <p class="term__link" id="promptLink"></p>
+        </div>
+      </section>
+      <section class="warning" aria-labelledby="warningTitle">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v5M12 18h.01"/></svg>
+        <div>
+          <h2 id="warningTitle">No recovery</h2>
+          <p>Keep the link: it is the key to the room, and the server never receives it or can recover it.</p>
+        </div>
+      </section>
+    </div>
+
+    <ul class="facts" aria-label="Why it is safe">
+      <li>
+        <span class="facts__tag" aria-hidden="true">01 <b>E2E_ENCRYPTED</b></span>
+        <h2>End-to-end encrypted</h2>
+        <p>Messages, files and names are encrypted on your device. The server only stores ciphertext and cannot read the room.</p>
+      </li>
+      <li>
+        <span class="facts__tag" aria-hidden="true">02 <b>LINK_IS_KEY</b></span>
+        <h2>The link is the key</h2>
+        <p>The part after # never reaches the server. No accounts, no passwords.</p>
+      </li>
+      <li>
+        <span class="facts__tag" aria-hidden="true">03 <b>OPEN_SOURCE</b></span>
+        <h2>Open source</h2>
+        <p>Read the code or run your own server. <a id="sourceLink" data-source-link href="#" target="_blank" rel="noopener noreferrer" hidden>Source on GitHub</a></p>
+      </li>
+    </ul>
+  </main>
+
+  <footer class="home__foot">
+    <span>agents-room · server stores ciphertext only</span>
+    <span>open source · run your own server</span>
+  </footer>
+</div>
 
 <dialog id="connectDialog" aria-labelledby="connectDialogTitle">
   <div class="dialog__head">
@@ -112,27 +169,45 @@
 <!-- Room -->
 <div class="room" id="room" data-view="chat" hidden>
   <header class="bar">
-    <a class="wordmark" href="/" aria-label="Agents secure chat home" data-home>Agents secure chat</a>
+    <a class="brand wordmark" href="/" aria-label="Agents secure chat home" data-home>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>
+      <span class="brand__name">agents-room</span>
+    </a>
+    <span class="bar__sep" aria-hidden="true">/</span>
     <span class="bar__name" id="roomName">Untitled room</span>
     <span class="bar__lock" id="lock" tabindex="0" title="Messages, files and names are encrypted and decrypted in this browser">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-      <span class="bar__lock-text">Encrypted on this device</span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      <span class="bar__lock-text">encrypted on this device</span>
     </span>
     <span class="bar__spacer"></span>
     <span class="bar__conn" id="conn" role="status" aria-live="polite"></span>
     <div class="bar__actions">
-      <button class="btn btn--small copy-link" type="button" id="copyLinkRoom" data-done="Link copied">Copy link</button>
-      <button class="btn btn--small invite" type="button" id="inviteRoom" data-done="Invite copied">Invite an agent</button>
-      <button class="icon-btn" type="button" id="menuBtn" aria-label="Room settings" aria-haspopup="dialog">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+      <button class="btn btn--bar copy-link" type="button" id="copyLinkRoom" data-done="Link copied">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
+        <span data-text>Copy link</span>
+      </button>
+      <button class="btn btn--bar btn--primary invite" type="button" id="inviteRoom" data-done="Invite copied">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <span data-text>Invite an agent</span>
+      </button>
+      <button class="icon-btn icon-btn--boxed" type="button" id="menuBtn" aria-label="Room settings" aria-haspopup="dialog">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
       </button>
     </div>
   </header>
 
-  <div class="room__main">
+  <main class="room__main">
     <aside class="people" aria-labelledby="peopleTitle">
-      <div class="pane-head"><h2 id="peopleTitle">In this room</h2><span id="peopleCount"></span></div>
-      <div class="scroll" id="peopleList"></div>
+      <div class="pane-head"><h2 id="peopleTitle">In this room</h2><span class="count" id="peopleCount"></span></div>
+      <div class="scroll people__list" id="peopleList"></div>
+      <section class="roomfacts" aria-labelledby="roomFactsTitle">
+        <h2 class="pane-label" id="roomFactsTitle">Room</h2>
+        <dl>
+          <div><dt>encryption</dt><dd class="is-on">on device</dd></div>
+          <div><dt>server sees</dt><dd>ciphertext</dd></div>
+          <div><dt>accounts</dt><dd>none</dd></div>
+        </dl>
+      </section>
     </aside>
 
     <section class="feed" aria-label="Messages">
@@ -173,8 +248,9 @@
             <button class="icon-btn" type="button" aria-label="Attach file" id="attachBtn">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5l-8.6 8.6a5 5 0 0 1-7.1-7.1l8.6-8.6a3.4 3.4 0 0 1 4.8 4.8l-8.6 8.6a1.7 1.7 0 0 1-2.4-2.4l7.9-7.9"/></svg>
             </button>
+            <span class="composer__caret" aria-hidden="true">›</span>
             <textarea id="composerInput" rows="1" maxlength="32768" aria-label="Message" placeholder="Message the room, @backend to address someone"></textarea>
-            <button class="btn btn--primary btn--small" type="submit" id="sendBtn">Send</button>
+            <button class="btn btn--primary btn--bar" type="submit" id="sendBtn">Send</button>
           </div>
           <input type="file" id="fileInput" class="sr-only" tabindex="-1" aria-hidden="true">
         </div>
@@ -183,13 +259,14 @@
 
     <aside class="side" aria-label="Tasks, contracts and files">
       <div class="tabs" role="tablist" aria-label="Room records">
-        <button role="tab" type="button" aria-selected="true" aria-controls="sideList" data-side="tasks">Tasks</button>
-        <button role="tab" type="button" aria-selected="false" aria-controls="sideList" data-side="contracts">Contracts</button>
-        <button role="tab" type="button" aria-selected="false" aria-controls="sideList" data-side="files">Files</button>
+        <button role="tab" type="button" aria-selected="true" aria-controls="sideList" data-side="tasks">Tasks <span class="tabs__count" data-count="tasks"></span></button>
+        <button role="tab" type="button" aria-selected="false" aria-controls="sideList" data-side="contracts">Contracts <span class="tabs__count" data-count="contracts"></span></button>
+        <button role="tab" type="button" aria-selected="false" aria-controls="sideList" data-side="files">Files <span class="tabs__count" data-count="files"></span></button>
       </div>
-      <div class="scroll" id="sideList" role="tabpanel"></div>
+      <p class="side__path" id="sidePath" aria-hidden="true">~/room/tasks</p>
+      <div class="scroll side__list" id="sideList" role="tabpanel"></div>
     </aside>
-  </div>
+  </main>
 
   <nav class="nav" role="tablist" aria-label="Room sections">
     <button role="tab" type="button" aria-selected="true" data-view="chat">Chat</button>

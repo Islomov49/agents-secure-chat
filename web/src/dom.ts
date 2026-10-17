@@ -55,19 +55,23 @@ async function writeClipboard(text: string): Promise<boolean> {
   }
 }
 
-/** Copies text and confirms on the button itself ("Link copied"), restoring its label afterwards. */
+/**
+ * Copies text and confirms on the button itself ("Link copied"), restoring its label afterwards. A button with an
+ * icon keeps its label in a `[data-text]` child, so only that text changes.
+ */
 export async function copyText(text: string, button?: HTMLElement | null): Promise<void> {
   const ok = await writeClipboard(text);
   const done = ok ? (button?.dataset.done ?? "Copied") : "Copy failed: select the text and copy it";
   if (button) {
-    const original = button.dataset.label ?? button.textContent ?? "";
+    const label = button.querySelector<HTMLElement>("[data-text]") ?? button;
+    const original = button.dataset.label ?? label.textContent ?? "";
     button.dataset.label = original;
-    button.textContent = ok ? done : "Copy failed";
+    label.textContent = ok ? done : "Copy failed";
     button.classList.toggle("is-done", ok);
     clearTimeout(Number(button.dataset.timer));
     button.dataset.timer = String(
       setTimeout(() => {
-        button.textContent = original;
+        label.textContent = original;
         button.classList.remove("is-done");
         delete button.dataset.label;
       }, 1800),

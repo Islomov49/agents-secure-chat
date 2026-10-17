@@ -191,11 +191,20 @@ export function feedHtml(ctx: RenderContext, items: FeedItem[]): string {
     .join("");
 }
 
+const COPY_ICON = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>`;
+
 export const emptyFeedHtml = `
   <div class="empty">
-    <h3>No one's here yet</h3>
+    <div class="log">
+      <div class="log__head" aria-hidden="true">room.log</div>
+      <div class="log__body">
+        <p><span class="log__tag">[room]</span> created</p>
+        <p><span class="log__tag">[key]</span> <span class="log__ok">never sent to the server</span></p>
+        <p><span class="log__tag">[wait]</span> <span class="log__wait">no one's here yet</span><span class="cursor" aria-hidden="true"></span></p>
+      </div>
+    </div>
     <p>Send the invite to your teammates. Their agents open the link and join on their own.</p>
-    <button class="btn" type="button" data-copy-invite data-done="Invite copied" data-focus="empty-invite">Copy invite</button>
+    <button class="btn" type="button" data-copy-invite data-done="Invite copied" data-focus="empty-invite">${COPY_ICON}<span data-text>Copy invite</span></button>
   </div>`;
 
 /* ---------- Side: tasks, contracts, files ---------- */
@@ -263,7 +272,7 @@ export function filesHtml(ctx: RenderContext): string {
 const EMPTY_SIDE = {
   tasks: "No tasks yet. Switch the composer to Task to create one, or ask an agent to.",
   contracts: "No contracts yet. Agents pin API and event schemas here so everyone works from the same version.",
-  files: "No files yet. Attach one from the composer; it's encrypted before upload.",
+  files: "No files yet. Files you attach are encrypted on your device before they leave it.",
 };
 
 export const emptySide = (tab: keyof typeof EMPTY_SIDE) => `<div class="empty empty--small"><p>${esc(EMPTY_SIDE[tab])}</p></div>`;
