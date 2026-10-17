@@ -129,6 +129,12 @@ async function waitText(page, selector, text, timeout = 15_000) {
   );
 }
 
+/**
+ * Clicks a control in a pane that live updates re-render (feed, side list, contract versions, rooms). A locator finds
+ * the element again if a render replaces it mid-click; page.click would hit the detached node and throw.
+ */
+const clickLive = (page, selector) => page.locator(selector).click();
+
 async function shot(page, name) {
   await page.screenshot({ path: join(SHOTS, `${name}.png`) });
 }
@@ -330,7 +336,7 @@ async function main() {
     await step("B replies mentioning A; the name prompt appears first", async () => {
       const cid = await messageCid(b, "the checkout build is ready");
       assert(cid, "found A's message");
-      await b.click(`[data-reply="${cid}"]`);
+      await clickLive(b, `[data-reply="${cid}"]`);
       await waitText(b, "#replyBar", "Replying to Kamola");
       await b.type("#composerInput", "@kamola looks good, I'll take the payment screen");
       await b.keyboard.press("Enter");
@@ -386,9 +392,9 @@ async function main() {
 
       await waitText(b, "#sideList .item__title", "Ship the payment screen", 20_000);
       const id = await b.evaluate(() => [...document.querySelectorAll("#sideList .item")].find((i) => i.textContent.includes("Ship the payment screen"))?.dataset.task);
-      await b.click(`[data-task-id="${id}"][data-task-status="in_progress"]`);
+      await clickLive(b, `[data-task-id="${id}"][data-task-status="in_progress"]`);
       await b.waitForSelector(`[data-task-id="${id}"][data-task-status="done"]`);
-      await b.click(`[data-task-id="${id}"][data-task-status="done"]`);
+      await clickLive(b, `[data-task-id="${id}"][data-task-status="done"]`);
       await waitText(b, "#sideList", "Reopen");
       await waitText(a, ".activity", "moved “Ship the payment screen” to Done", 20_000);
       await waitText(a, '.task-card .status--done', "Done");
@@ -408,7 +414,7 @@ async function main() {
       await waitText(a, ".chip__name", "build-log.bin");
       await waitText(b, ".chip__name", "build-log.bin", 20_000);
       const cid = await messageCid(b, "Build log attached");
-      await b.click(`.msg[data-cid="${cid}"] [data-download]`);
+      await clickLive(b, `.msg[data-cid="${cid}"] [data-download]`);
       const saved = await waitForDownload(dlB, "build-log.bin");
       const got = await readFile(saved);
       assert(got.length === fileBytes.length && sha256(got) === sha256(fileBytes), "downloaded bytes are identical");
@@ -452,13 +458,13 @@ async function main() {
     await step("Contracts: open the artifact, see version history and content, download a version", async () => {
       await a.click('.tabs [data-side="contracts"]');
       await waitText(a, "#sideList .item__title", "event-schema");
-      await a.click('#sideList [data-artifact="event-schema"]');
+      await clickLive(a, '#sideList [data-artifact="event-schema"]');
       await a.waitForSelector("#contractDialog[open]");
       await waitText(a, "#contractVersions", "version 2 (latest)");
       await waitText(a, "#contractContent", "ISO 4217 code");
       await waitText(a, "#contractMeta", "currency is ISO 4217");
       await shot(a, "flow-04-contract-1280x720");
-      await a.click('#contractVersions [data-version="1"]');
+      await clickLive(a, '#contractVersions [data-version="1"]');
       await waitText(a, "#contractContent", '"currency": "string"');
       await a.click("#contractDownload");
       const saved = await waitForDownload(dlA, "event-schema.v1.json");
@@ -469,7 +475,7 @@ async function main() {
 
     await step("A person pins contracts from the browser: a new version and a new contract; the agent reads them", async () => {
       await a.click('.tabs [data-side="contracts"]');
-      await a.click('#sideList [data-artifact="event-schema"]');
+      await clickLive(a, '#sideList [data-artifact="event-schema"]');
       await a.waitForSelector("#contractDialog[open]");
       await a.click("#contractEditBtn");
       await waitText(a, "#contractSave", "Pin version 3");
@@ -481,7 +487,7 @@ async function main() {
       await waitText(a, "#contractVersions", "version 3 (latest)");
       await waitText(a, "#contractMeta", "amount in minor units");
       await a.click("#contractDialog [data-close]");
-      await a.click("#sideList [data-new-contract]");
+      await clickLive(a, "#sideList [data-new-contract]");
       await a.waitForSelector("#contractDialog[open]");
       await a.type("#contractName", "api-contract");
       await a.type("#contractText", "openapi: 3.1.0\npaths:\n  /v1/purchases: {}\n");
@@ -539,7 +545,7 @@ async function main() {
       await waitText(a, "#roomsOpen", "Your rooms (1)");
       await a.click("#roomsOpen");
       await waitText(a, "#roomsList .rooms__name", "Checkout v2");
-      await a.click("#roomsList [data-open-room]");
+      await clickLive(a, "#roomsList [data-open-room]");
       await a.waitForSelector("#room:not([hidden])");
       await waitText(a, ".msg__body", "Back after a reload");
       assert((await a.evaluate(() => location.pathname + location.hash)) === "/r", "room at /r without fragment");
