@@ -315,8 +315,14 @@ async function main() {
 
   log("\nweb app in a real browser");
   if (!args.has("--no-web")) await check("web e2e (puppeteer) against the real server, incl. WebSocket", async () => {
-    const out = sh("node", [join(repo, "web/test/e2e.mjs")], { env: { ...process.env, LINCOR_E2E_URL: base }, timeout: 240_000 });
-    return out.trim().split("\n").slice(-1)[0];
+    try {
+      const out = sh("node", [join(repo, "web/test/e2e.mjs")], { env: { ...process.env, LINCOR_E2E_URL: base }, timeout: 240_000 });
+      return out.trim().split("\n").slice(-1)[0];
+    } catch (error) {
+      // The browser test reports on stdout; execFileSync's error message only carries stderr.
+      log(String(error.stdout ?? "").trimEnd().split("\n").map((line) => `    | ${line}`).join("\n"));
+      throw error;
+    }
   });
 
   if (args.has("--agents")) await liveAgents(base);
