@@ -447,7 +447,7 @@ async function main() {
     await step("A attaches two files at once; each is encrypted in the browser; B downloads identical bytes, A too from the Files tab", async () => {
       const input = await a.$("#fileInput");
       await input.uploadFile(filePath, pdfPath);
-      await waitText(a, "#attachBar", "2 files");
+      await waitText(a, "#attachBar", "build-log.bin, Owner — Урок 1.pdf");
       await a.type("#composerInput", "Build log attached @bobur");
       await a.keyboard.press("Enter");
       await waitText(a, ".chip__name", "build-log.bin");

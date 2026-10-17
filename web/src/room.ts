@@ -314,14 +314,12 @@ class RoomController {
     $("jumpLatest").hidden = true;
   }
 
-  /** A file dropped on the room or pasted into the composer. */
+  /** Files dropped on the room or pasted into the composer; each is shared as its own encrypted file. */
   attachFrom(files: FileList | null | undefined) {
-    const file = files?.[0];
-    if (!file) return;
+    if (!files?.length) return;
     if (this.session.deleted) return toast("This room is deleted. Restore it to post again.", "error");
     if (this.view !== "chat") this.setView("chat");
-    if (files.length > 1) toast(`One file per message: attached ${file.name}`);
-    this.stageFile(file);
+    this.stageFiles([...files]);
   }
 
   private renderSide(ctx: RenderContext) {
@@ -396,8 +394,9 @@ class RoomController {
     const bar = $("attachBar");
     bar.hidden = !files.length;
     const total = files.reduce((n, f) => n + f.size, 0);
-    $("attachName").textContent =
-      files.length === 1 ? `${files[0].name} · ${formatBytes(files[0].size)}` : files.length ? `${files.length} files · ${formatBytes(total)}` : "";
+    // A few files are named; more are counted (all names are in the tooltip).
+    const names = files.length <= 3 ? files.map((f) => f.name).join(", ") : `${files.length} files`;
+    $("attachName").textContent = files.length ? `${names} · ${formatBytes(total)}` : "";
     $("attachName").title = files.map((f) => f.name).join("\n");
   }
 
