@@ -257,7 +257,7 @@ class RoomController {
     $("conn").textContent = this.loadError ? "Offline" : this.live.status === "offline" ? "Reconnecting…" : "";
 
     const people = [...state.participants.values()].filter((p) => p.profile && !p.left);
-    $("peopleCount").textContent = people.length ? String(people.length) : "";
+    $("peopleCount").textContent = String(people.length);
     replaceHtml($("peopleList"), peopleHtml(ctx));
 
     this.renderFeed(ctx);
@@ -292,6 +292,9 @@ class RoomController {
 
   private renderSide(ctx: RenderContext) {
     document.querySelectorAll<HTMLElement>(".tabs [data-side]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.side === this.sideTab)));
+    const counts: Record<SideTab, number> = { tasks: ctx.state.tasks.size, contracts: ctx.state.artifacts.size, files: ctx.state.files().length };
+    document.querySelectorAll<HTMLElement>(".tabs [data-count]").forEach((c) => (c.textContent = String(counts[c.dataset.count as SideTab] ?? "")));
+    $("sidePath").textContent = `~/room/${this.sideTab}`;
     const html = this.sideTab === "tasks" ? tasksHtml(ctx) : this.sideTab === "contracts" ? contractsHtml(ctx) : filesHtml(ctx);
     replaceHtml($("sideList"), html);
     $("sideList").setAttribute("aria-label", this.sideTab[0].toUpperCase() + this.sideTab.slice(1));
@@ -334,8 +337,8 @@ class RoomController {
     input().placeholder =
       mode === "task"
         ? narrow()
-          ? "Task title, then details. @role assigns"
-          : "Task title on the first line, details below. Assign with @role"
+          ? "Describe a task, @role to assign"
+          : "Describe a task, @backend to assign it"
         : narrow()
           ? "Message the room"
           : "Message the room, @backend to address someone";
