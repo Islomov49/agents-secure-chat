@@ -20,7 +20,7 @@ import {
 } from "@lincor/core";
 import { $, announce, copyText, replaceHtml, saveBytes, toast } from "./dom";
 import { Live, type EventSource, type LiveStats } from "./live";
-import { announcementFor, contractsHtml, emptyFeedHtml, feedHtml, filesHtml, nameOf, peopleHtml, tasksHtml, type RenderContext } from "./render";
+import { aboutHtml, announcementFor, contractsHtml, emptyFeedHtml, feedHtml, filesHtml, nameOf, peopleHtml, tasksHtml, type RenderContext } from "./render";
 import { loadRecord, saveRecord, setCurrent, type RoomRecord, type Stores } from "./storage";
 import {
   STATUS_LABEL,
@@ -256,6 +256,9 @@ class RoomController {
 
     $("conn").textContent = this.loadError ? "Offline" : this.live.status === "offline" ? "Reconnecting…" : "";
 
+    replaceHtml($("aboutBody"), aboutHtml(ctx));
+    $("aboutEdit").hidden = !state.meta.description?.trim();
+
     const people = [...state.participants.values()].filter((p) => p.profile && !p.left);
     $("peopleCount").textContent = String(people.length);
     replaceHtml($("peopleList"), peopleHtml(ctx));
@@ -374,6 +377,8 @@ class RoomController {
   askJoin(action: () => Promise<unknown>, title = "Before you post, tell the room who you are") {
     this.pendingAction = action;
     $("joinTitle").textContent = title;
+    // Whoever starts the work in a room without an About is asked what the room is for (PRD FR-1.5).
+    $("joinAboutField").hidden = !!this.session.state.meta.description?.trim();
     $("joinForm").hidden = false;
     if (this.view !== "chat") this.setView("chat");
     const name = $<HTMLInputElement>("joinName");
@@ -398,9 +403,13 @@ class RoomController {
       return;
     }
     const action = this.pendingAction;
+    const aboutField = $<HTMLTextAreaElement>("joinAbout");
+    const about = $("joinAboutField").hidden ? "" : aboutField.value.trim();
     this.setBusy(true);
     try {
       await this.session.join({ name, role, client: "browser", kind: "human" });
+      if (about && !this.session.state.meta.description?.trim()) await this.session.setMeta({ description: about });
+      aboutField.value = "";
       this.hideJoin();
       this.live.restart();
       this.refreshPresenceSoon();
@@ -626,6 +635,7 @@ class RoomController {
   openMenu() {
     const state = this.session.state;
     $<HTMLInputElement>("renameInput").value = state.meta.name ?? "";
+    $<HTMLTextAreaElement>("aboutInput").value = state.meta.description ?? "";
     this.showTtl(state.meta.ttlDays ?? null);
     $<HTMLInputElement>("rememberToggle").checked = this.remembered;
     $("deleteConfirm").hidden = true;
@@ -654,6 +664,28 @@ class RoomController {
       await this.session.setMeta({ name: name.trim() });
       announce("Room renamed");
     }, "To rename the room, first tell the room who you are");
+  }
+
+  /** Opens Room settings at the About editor. */
+  editAbout() {
+    this.openMenu();
+    // showModal() has focused the first control; move it to the About editor.
+    $<HTMLTextAreaElement>("aboutInput").focus();
+  }
+
+  saveAbout(text: string) {
+    const about = text.trim();
+    if (!about) {
+      toast("Write what the room is for: the goal, who is expected, where the contracts are", "error");
+      $<HTMLTextAreaElement>("aboutInput").focus();
+      return;
+    }
+    $<HTMLDialogElement>("menuDialog").close();
+    if (about === this.session.state.meta.description?.trim()) return;
+    this.whenJoined(async () => {
+      await this.session.setMeta({ description: about });
+      announce("About updated");
+    }, "To write the About, first tell the room who you are");
   }
 
   setTtl(days: number | null) {
@@ -842,6 +874,14 @@ export function initRoom() {
   on("renameForm", "submit", (e, room) => {
     e.preventDefault();
     room.rename($<HTMLInputElement>("renameInput").value);
+  });
+  on("aboutForm", "submit", (e, room) => {
+    e.preventDefault();
+    room.saveAbout($<HTMLTextAreaElement>("aboutInput").value);
+  });
+  on("aboutEdit", "click", (_e, room) => room.editAbout());
+  on("aboutBody", "click", (e, room) => {
+    if ((e.target as HTMLElement).closest("[data-about-edit]")) room.editAbout();
   });
   on("ttlForm", "submit", (e, room) => {
     e.preventDefault();

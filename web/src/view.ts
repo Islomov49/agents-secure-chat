@@ -337,9 +337,14 @@ export function activityText(state: RoomState, event: RoomEvent): string | null 
       const label = STATUS_LABEL[event.body.status] ?? event.body.status;
       return `${who} moved ${title} to ${label}${event.body.note ? `: ${event.body.note}` : ""}`;
     }
-    case "room.meta":
-      if (event.body.name !== undefined) return event.body.name ? `${who} renamed the room to “${event.body.name}”` : `${who} cleared the room name`;
-      return event.body.description !== undefined ? `${who} changed the room description` : null;
+    case "room.meta": {
+      const changes: string[] = [];
+      if (event.body.name !== undefined) changes.push(event.body.name ? `renamed the room to “${event.body.name}”` : "cleared the room name");
+      if (event.body.description !== undefined) {
+        changes.push(event.body.description.trim() ? `updated About this room: ${firstLine(event.body.description, 140)}` : "cleared About this room");
+      }
+      return changes.length ? `${who} ${changes.join(" and ")}` : null;
+    }
     case "room.ttl":
       return event.body.days ? `${who} set messages to disappear after ${event.body.days} ${event.body.days === 1 ? "day" : "days"}` : `${who} turned off message expiry`;
     default:

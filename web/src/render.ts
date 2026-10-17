@@ -40,6 +40,21 @@ function avatar(p: Participant | undefined, name: string, presence?: string): st
   return `<div class="avatar${isHuman(p) ? " avatar--human" : ""}"${presence ? ` data-presence="${esc(presence)}"` : ""} aria-hidden="true">${esc(initialOf(name))}</div>`;
 }
 
+/* ---------- About this room ---------- */
+
+/** What the room is for, who wrote it and when; or an invitation to write it (PRD FR-1.5). */
+export function aboutHtml(ctx: RenderContext): string {
+  const meta = ctx.state.meta;
+  const text = meta.description?.trim();
+  if (!text) {
+    return `<p class="about__empty">No About yet. Write what this room is for: the goal, who is expected, where the contracts are.</p>
+      <button class="btn btn--small" type="button" data-about-edit>Write About</button>`;
+  }
+  const by = meta.descriptionBy ? nameOf(ctx, meta.descriptionBy) : "a member";
+  const when = meta.descriptionTs ? whenLabel(meta.descriptionTs, ctx.now) : "";
+  return `<p class="about__text" tabindex="0">${esc(text)}</p><p class="about__meta">by ${esc(by)}${when ? ` · ${esc(when)}` : ""}</p>`;
+}
+
 /* ---------- People ---------- */
 
 export function peopleHtml(ctx: RenderContext): string {

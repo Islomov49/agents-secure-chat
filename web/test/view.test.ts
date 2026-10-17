@@ -212,6 +212,12 @@ describe("feedItems", () => {
     expect(hasConversation(items)).toBe(true);
     expect(roomTitle(state)).toBe("Checkout v2");
     expect(activityText(state, ev(B, "room.ttl", { days: null }))).toBe("Bobur's Unity agent turned off message expiry");
+    expect(activityText(state, ev(B, "room.meta", { description: "Checkout v2: purchase events.\nContracts in event-schema." }))).toBe(
+      "Bobur's Unity agent updated About this room: Checkout v2: purchase events.",
+    );
+    expect(activityText(state, ev(A, "room.meta", { name: "Checkout v3", description: "Refunds too" }))).toBe(
+      "Kamola renamed the room to “Checkout v3” and updated About this room: Refunds too",
+    );
   });
 
   it("is empty for an empty room", () => {

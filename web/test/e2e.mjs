@@ -305,14 +305,19 @@ async function main() {
       assert(loc.path === "/r" && loc.hash === "" && !loc.href.includes(key), `URL is ${loc.href}`);
       assert(!roomRequests.some((r) => r.startsWith("POST") && r.endsWith("/events")), "no event posted before joining");
       assert((await a.$eval("#composerInput", (t) => t.value)) === "Hello team, the checkout build is ready for review.", "first message waits in composer");
+      await waitText(a, "#aboutBody", "No About yet");
+      assert(await visible(a, "#joinAboutField"), "the first to post is asked what the room is for");
       await shot(a, "flow-02-room-name-prompt-1280x720");
     });
 
-    await step("A gives a name and the join + first message are published", async () => {
+    await step("A gives a name and what the room is for; the join, the About and the first message are published", async () => {
       await a.type("#joinName", "Kamola");
       await a.type("#joinRole", "team lead");
+      await a.type("#joinAbout", "Checkout v2: the web team and the Unity client agree on purchase events. Contracts live in event-schema.");
       await a.click("#joinGo");
       await waitText(a, ".msg__body", "the checkout build is ready");
+      await waitText(a, "#aboutBody", "Contracts live in event-schema.");
+      await waitText(a, "#aboutBody", "by Kamola");
       await waitText(a, "#peopleList", "Kamola");
       await waitText(a, ".activity", "Kamola joined (team lead, Browser)");
       assert(!(await visible(a, "#joinForm")), "join form closed");
@@ -335,6 +340,7 @@ async function main() {
       assert(loc.path === "/r" && loc.hash === "", `fragment removed after load: ${JSON.stringify(loc)}`);
       assert(!(await visible(b, "#joinForm")), "no name prompt while only reading");
       await waitText(b, "#peopleList", "Kamola");
+      await waitText(b, "#aboutBody", "agree on purchase events");
     });
 
     await step("B replies mentioning A; the name prompt appears first", async () => {
@@ -346,6 +352,7 @@ async function main() {
       await b.keyboard.press("Enter");
       await b.waitForSelector("#joinForm:not([hidden])");
       await waitText(b, "#joinTitle", "tell the room who you are");
+      assert(!(await visible(b, "#joinAboutField")), "no About question once the room has one");
       await shot(b, "flow-03-b-name-prompt-1280x720");
       await b.type("#joinName", "Bobur");
       await b.keyboard.press("Enter");
@@ -457,6 +464,27 @@ async function main() {
       }));
       assert(check.xss === undefined && check.imgs === 0 && check.jsLinks === 0, `no script ran or was inserted: ${JSON.stringify(check)}`);
       assert(check.rejected === 1 && check.lock.includes("1 event could not be verified"), `ignored event counted: ${JSON.stringify(check)}`);
+    });
+
+    await step("About: an agent rewrites it and hostile text stays text; A edits it in Room settings and B sees it live", async () => {
+      await agent.setMeta({ description: `<img src=x onerror="window.__xss=4"> Checkout v2 and refunds. Contracts: event-schema, refund-api.` });
+      await waitText(a, "#aboutBody", "Checkout v2 and refunds", 20_000);
+      await waitText(a, "#aboutBody", "by Ali's frontend agent");
+      await waitText(a, ".activity", "Ali's frontend agent updated About this room");
+      const safe = await a.evaluate(() => ({ xss: window.__xss, imgs: document.querySelectorAll("#aboutBody img, #feedList img").length }));
+      assert(safe.xss === undefined && safe.imgs === 0, `About stays text: ${JSON.stringify(safe)}`);
+      await a.click("#aboutEdit");
+      await a.waitForSelector("#menuDialog[open]");
+      await a.waitForFunction(() => document.activeElement?.id === "aboutInput", { timeout: 3000 }).catch(() => assert(false, "the editor has focus"));
+      assert((await a.$eval("#aboutInput", (t) => t.value)).includes("refund-api"), "the editor holds the current About");
+      await a.$eval("#aboutInput", (t) => (t.value = ""));
+      await a.type("#aboutInput", "Checkout v2 and refunds. Contracts: event-schema, refund-api. Nobody pushes to main.");
+      await shot(a, "flow-04b-about-editor-1280x720");
+      await a.click('#aboutForm button[type="submit"]');
+      await waitText(a, "#aboutBody", "Nobody pushes to main.");
+      await waitText(b, "#aboutBody", "Nobody pushes to main.", 20_000);
+      await waitText(b, "#aboutBody", "by Kamola");
+      await shot(b, "flow-04c-about-1280x720");
     });
 
     await step("Contracts: open the artifact, see version history and content, download a version", async () => {
@@ -604,6 +632,7 @@ async function main() {
       assert(!(await visible(b, ".people")) && (await visible(b, ".feed")), "chat first");
       await b.click('.nav [data-view="people"]');
       assert(await visible(b, ".people"), "people pane");
+      assert(await visible(b, "#aboutBody"), "About at the top of the people pane");
       assert(!(await visible(b, ".feed")), "feed hidden");
       await shot(b, "phone-people-390x844");
       await b.click('.nav [data-view="tasks"]');

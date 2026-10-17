@@ -1,6 +1,6 @@
 import { RoomState, shortId, type RoomEvent } from "@lincor/core";
 import { describe, expect, it } from "vitest";
-import { feedHtml, filesHtml, peopleHtml, tasksHtml, type RenderContext } from "../src/render";
+import { aboutHtml, feedHtml, filesHtml, peopleHtml, tasksHtml, type RenderContext } from "../src/render";
 import { feedItems } from "../src/view";
 
 let seq = 0;
@@ -19,7 +19,7 @@ function hostileRoom(): RenderContext {
   state.apply(ev(A, "task.create", { title: EVIL, description: EVIL, assignee: EVIL, acceptance: [EVIL] }));
   state.apply(ev(A, "file", { blob: "b", name: EVIL, mime: "text/html", size: 10, sha256: "", key: "", np: "", cs: 65536, text: EVIL }));
   state.apply(ev(A, "artifact.put", { name: EVIL, content: EVIL, note: EVIL }));
-  state.apply(ev(A, "room.meta", { name: EVIL }));
+  state.apply(ev(A, "room.meta", { name: EVIL, description: `${EVIL}\nsecond line` }));
   state.apply(ev(M, "join", { profile: { name: "Me", role: "person", client: "browser", kind: "human" } }));
   return { state, me: M, myHandles: ["me"], presence: new Map(), now: Date.now() };
 }
@@ -47,6 +47,16 @@ describe("pane HTML is safe with hostile room content", () => {
     noInjectedMarkup(html);
     expect(html).toContain('<span class="mention mention--me">@me</span>');
     expect(html).toContain('class="msg msg--for-me"');
+  });
+  it("about", () => {
+    const html = aboutHtml(hostileRoom());
+    noInjectedMarkup(html);
+    expect(html).toContain("&lt;img src=x onerror=alert(1)&gt;");
+    expect(html).toContain("second line");
+    expect(html).toMatch(/by &lt;img src=x onerror=alert\(1\)&gt;/);
+    const empty = aboutHtml({ ...hostileRoom(), state: new RoomState() });
+    expect(empty).toContain("No About yet");
+    expect(empty).toContain("data-about-edit");
   });
   it("tasks and files", () => {
     const ctx = hostileRoom();
