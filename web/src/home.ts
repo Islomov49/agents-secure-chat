@@ -38,10 +38,8 @@ async function loadServerInfo() {
     const info = await serverInfo(location.origin);
     if (typeof info.cli_command === "string" && info.cli_command.trim()) cliCommand = info.cli_command.trim();
     showSource(info.source_url);
-    showRelay(true);
   } catch {
     cliCommand = FALLBACK_CLI;
-    showRelay(false);
   }
   renderCommands();
 }
@@ -53,14 +51,6 @@ function showSource(url: unknown) {
     if (ok) link.href = url;
     link.hidden = !ok;
   });
-}
-
-/** Whether this server answered /api/v1/info. */
-function showRelay(online: boolean) {
-  const relay = $("relay");
-  relay.textContent = online ? "relay online" : "relay unreachable";
-  relay.dataset.state = online ? "online" : "offline";
-  relay.hidden = false;
 }
 
 const linkOf = (key: string) => linkFor(location.origin, key);

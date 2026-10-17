@@ -247,7 +247,7 @@ async function main() {
       const info = await (await fetch(`${origin}/api/v1/info`)).json();
       await waitText(a, '#connectDialog [data-cmd="claude"]', `claude mcp add --scope user agents-room -- ${info.cli_command} mcp`);
       await waitText(a, '#connectDialog [data-cmd="codex"]', `codex mcp add agents-room -- ${info.cli_command} mcp`);
-      await waitText(a, "#relay", "relay online");
+      assert(!(await a.$("#relay")), "no server status in the home header");
       await a.keyboard.press("Tab");
       await a.keyboard.press("Tab");
       const focus = await a.evaluate(() => {

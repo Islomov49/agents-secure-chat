@@ -167,13 +167,6 @@ textarea {
   padding: 10px 32px; border-bottom: 1px solid var(--line); background: var(--ground);
 }
 .home__nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; }
-.relay {
-  display: inline-flex; align-items: center; gap: 8px; padding: 5px 10px;
-  border: 1px solid var(--line); border-radius: var(--r-control);
-  font-family: var(--mono); font-size: 13px; color: var(--dim); white-space: nowrap;
-}
-.relay::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgba(127, 185, 150, 0.15); }
-.relay[data-state="offline"]::before { background: var(--faint); box-shadow: none; }
 
 .home__body {
   flex: 1; width: 100%; max-width: 1120px; margin: 0 auto;
