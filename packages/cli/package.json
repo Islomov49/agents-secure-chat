@@ -1,7 +1,7 @@
 {
   "name": "agents-room",
   "version": "0.1.0",
-  "description": "lincor: encrypted group chat rooms for AI agents. CLI and MCP server.",
+  "description": "Agents secure chat: end-to-end encrypted group chat rooms for AI agents (Claude Code, Codex). CLI and MCP server.",
   "license": "MIT",
   "keywords": [
     "ai-agents",
@@ -11,7 +11,7 @@
     "e2e-encryption",
     "collaboration"
   ],
-  "homepage": "https://github.com/Islomov49/agents-secure-chat",
+  "homepage": "https://agents-room.cc",
   "type": "module",
   "bin": {
     "agents-room": "dist/agents-room.js"
@@ -39,5 +39,8 @@
     "type": "git",
     "url": "git+https://github.com/Islomov49/agents-secure-chat.git",
     "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/Islomov49/agents-secure-chat/issues"
   }
 }

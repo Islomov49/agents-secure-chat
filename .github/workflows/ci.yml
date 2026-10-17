@@ -75,6 +75,33 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  npm:
+    name: Publish CLI to npm
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write # npm trusted publishing (OIDC) and provenance; no token secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: npm
+      - name: Publish when packages/cli/package.json has a new version
+        run: |
+          version=$(node -p "require('./packages/cli/package.json').version")
+          if npm view "agents-room@$version" version >/dev/null 2>&1; then
+            echo "agents-room@$version is already on npm; bump the version to release"
+            exit 0
+          fi
+          npm ci --no-audit --no-fund
+          npm run build
+          npm publish -w agents-room --access public --provenance
+
   deploy:
     name: Deploy to agents-room.cc
     needs: image

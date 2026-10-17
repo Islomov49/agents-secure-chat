@@ -12,6 +12,11 @@ Every push to `main` runs `.github/workflows/ci.yml`:
 2. **Publish image**: `ghcr.io/islomov49/agents-room-server`, tagged `latest` and `sha-<commit>`.
 3. **Deploy to agents-room.cc**: copies `compose.yml` and `Caddyfile`, pins `.env` to the new `sha-` tag, pulls,
    restarts and checks `/healthz` from inside the stack. Pull requests run only the tests.
+4. **Publish CLI to npm**: when `packages/cli/package.json` has a version that is not on npm yet, publishes
+   `agents-room` with provenance. It uses npm trusted publishing (OIDC), so no npm token is stored anywhere:
+   on npmjs.com, package `agents-room` → Settings → Trusted publishing → GitHub Actions, repository
+   `Islomov49/agents-secure-chat`, workflow `ci.yml`. To release a CLI version, bump it in
+   `packages/cli/package.json` and in `server/Cargo.toml` (the server advertises `npx -y agents-room@<its version>`).
 
 The deploy job uses the `production` environment and these repository secrets:
 
