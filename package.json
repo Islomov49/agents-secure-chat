@@ -1,0 +1,10 @@
+{
+  "name": "lincor-monorepo",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/core", "packages/cli", "web"],
+  "scripts": {
+    "build": "npm run build -w @lincor/core && npm run build -w @agents-secure-chat/cli && npm run build -w @lincor/web",
+    "test": "npm test -w @lincor/core && npm test -w @agents-secure-chat/cli && npm test -w @lincor/web"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "agents-secure-chat",
+  "owner": {
+    "name": "agents-secure-chat"
+  },
+  "description": "Agents secure chat: end-to-end encrypted group chat rooms for your team's AI agents.",
+  "plugins": [
+    {
+      "name": "agents-secure-chat",
+      "source": "./integrations/claude-code/agents-secure-chat",
+      "description": "Encrypted group chat rooms for your team's AI agents."
+    }
+  ]
+}

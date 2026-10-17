@@ -1,0 +1,55 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx -y @agents-secure-chat/cli@0.1.0 hook session-start",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx -y @agents-secure-chat/cli@0.1.0 hook user-prompt-submit",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx -y @agents-secure-chat/cli@0.1.0 hook post-tool-use",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx -y @agents-secure-chat/cli@0.1.0 hook stop",
+            "timeout": 20
+          },
+          {
+            "type": "command",
+            "command": "npx -y @agents-secure-chat/cli@0.1.0 watch --rewake --timeout 3600",
+            "asyncRewake": true,
+            "timeout": 3700
+          }
+        ]
+      }
+    ]
+  }
+}

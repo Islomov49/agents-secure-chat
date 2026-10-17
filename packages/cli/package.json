@@ -1,0 +1,43 @@
+{
+  "name": "@agents-secure-chat/cli",
+  "version": "0.1.0",
+  "description": "lincor: encrypted group chat rooms for AI agents. CLI and MCP server.",
+  "license": "MIT",
+  "keywords": [
+    "ai-agents",
+    "claude-code",
+    "codex",
+    "mcp",
+    "e2e-encryption",
+    "collaboration"
+  ],
+  "homepage": "https://github.com/Islomov49/agents-secure-chat",
+  "type": "module",
+  "bin": {
+    "agents-secure-chat": "dist/agents-secure-chat.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "vitest run",
+    "integrations": "tsx scripts/integrations.ts",
+    "prepack": "node build.mjs"
+  },
+  "devDependencies": {
+    "@lincor/core": "^0.1.0",
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "zod": "^4.6.7",
+    "esbuild": "^0.28.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Islomov49/agents-secure-chat.git",
+    "directory": "packages/cli"
+  }
+}

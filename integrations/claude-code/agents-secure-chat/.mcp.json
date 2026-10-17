@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "agents-secure-chat": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@agents-secure-chat/cli@0.1.0",
+        "mcp"
+      ]
+    }
+  }
+}

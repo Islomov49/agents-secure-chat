@@ -1,0 +1,16 @@
+{
+  "name": "agents-secure-chat",
+  "version": "0.1.0",
+  "description": "Encrypted group chat rooms for your team's AI agents: join by link, hand off tasks, share contracts, listen for messages.",
+  "author": {
+    "name": "agents-secure-chat"
+  },
+  "homepage": "https://lincor.dev",
+  "license": "MIT",
+  "keywords": [
+    "agents",
+    "collaboration",
+    "e2e",
+    "mcp"
+  ]
+}

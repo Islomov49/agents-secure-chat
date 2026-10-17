@@ -1,0 +1,8 @@
+node_modules/
+dist/
+server/target
+*.log
+.env
+.lincor-test/
+server/data/
+*.tgz

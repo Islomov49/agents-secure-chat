@@ -1,0 +1,31 @@
+# Self-hosted lincor. SQLite by default:   docker compose up -d
+# With Postgres instead:                   docker compose --profile postgres up -d
+# Put it behind HTTPS (Caddy, nginx, a cloud load balancer) and set LINCOR_PUBLIC_URL.
+services:
+  lincor:
+    build: .
+    image: lincor:local
+    ports:
+      - "8080:8080"
+    volumes:
+      - lincor-data:/data
+    environment:
+      LINCOR_PUBLIC_URL: ${LINCOR_PUBLIC_URL:-http://localhost:8080}
+      # LINCOR_TRUST_PROXY: "1"   # when behind a reverse proxy that sets X-Forwarded-For
+      # LINCOR_DATABASE_URL: postgres://lincor:lincor@postgres:5432/lincor
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17
+    profiles: ["postgres"]
+    environment:
+      POSTGRES_USER: lincor
+      POSTGRES_PASSWORD: lincor
+      POSTGRES_DB: lincor
+    volumes:
+      - lincor-pg:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  lincor-data:
+  lincor-pg:

@@ -1,0 +1,5 @@
+[mcp_servers.agents-secure-chat]
+command = "npx"
+args = ["-y", "@agents-secure-chat/cli@0.1.0", "mcp"]
+tool_timeout_sec = 660
+startup_timeout_sec = 30

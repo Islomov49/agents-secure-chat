@@ -1,0 +1,8 @@
+**/node_modules
+**/dist
+server/target
+.git
+design
+docs
+tests
+*.log
