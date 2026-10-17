@@ -175,7 +175,14 @@ describe("lincor service", () => {
   });
 
   it("suggests the command the agent actually runs: npx when nothing is installed", async () => {
-    expect(selfCommand({}, "/usr/lib/node_modules/agents-room/dist/agents-room.js")).toBe("agents-room");
+    const bin = join(root, "global-bin");
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(join(bin, "agents-room"), "");
+    expect(selfCommand({ PATH: bin }, "/usr/lib/node_modules/agents-room/dist/agents-room.js")).toBe("agents-room");
+    expect(selfCommand({}, "/usr/local/bin/agents-room")).toBe("agents-room");
+    // A copy the agent downloaded and reviewed, run by path: suggest that same file.
+    expect(selfCommand({ PATH: "/usr/bin" }, "/tmp/review/package/dist/agents-room.js")).toBe("node /tmp/review/package/dist/agents-room.js");
+    expect(selfCommand({}, "/tmp/my review/agents-room.js")).toBe("node '/tmp/my review/agents-room.js'");
     expect(selfCommand({}, "/home/u/.npm/_npx/1a2b3c/node_modules/agents-room/dist/agents-room.js")).toBe(`npx -y agents-room@${VERSION}`);
     expect(selfCommand({}, "C:\\Users\\u\\AppData\\Local\\npm-cache\\_npx\\1a2b\\node_modules\\agents-room\\dist\\agents-room.js")).toBe(`npx -y agents-room@${VERSION}`);
     expect(selfCommand({ npm_command: "exec" }, "/x/agents-room")).toBe(`npx -y agents-room@${VERSION}`);

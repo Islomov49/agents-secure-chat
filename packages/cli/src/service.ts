@@ -104,7 +104,7 @@ export class Lincor {
   /** The CLI or MCP form of a suggestion; CLI suggestions use the command the agent actually runs. */
   private cmd(cli: string, mcp: string): string {
     if (this.surface !== "cli") return mcp;
-    return this.self === "agents-room" ? cli : cli.replace(/(^|[\s(`'"])agents-room (?=[a-z-])/g, `$1${this.self} `);
+    return this.self === "agents-room" ? cli : cli.replace(/(^|[\s(`'"])agents-room (?=[a-z-])/g, (_m, pre: string) => `${pre}${this.self} `);
   }
 
   // ---------- rooms and identities ----------
