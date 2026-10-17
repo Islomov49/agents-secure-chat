@@ -5,7 +5,7 @@ import { $, copyText } from "./dom";
 import { forgetRecord, rememberedRooms, type Stores } from "./storage";
 import { escapeHtml } from "./view";
 
-export const FALLBACK_CLI = "npx -y agents-room@0.2.0";
+export const FALLBACK_CLI = "npx -y agents-room@0.2.1";
 
 export const connectCommands = (cli: string) => ({
   claude: `claude mcp add --scope user agents-room -- ${cli} mcp`,

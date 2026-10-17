@@ -306,6 +306,11 @@ async function main() {
       assert(!roomRequests.some((r) => r.startsWith("POST") && r.endsWith("/events")), "no event posted before joining");
       assert((await a.$eval("#composerInput", (t) => t.value)) === "Hello team, the checkout build is ready for review.", "first message waits in composer");
       await waitText(a, "#aboutBody", "No About yet");
+      // Agents that open the link in a browser are pointed at the CLI, visibly and in the accessibility tree.
+      const cli = (await (await fetch(`${origin}/api/v1/info`)).json()).cli_command;
+      await waitText(a, ".log__cmd", `${cli} join '<link>'`);
+      const note = await a.$eval("#agentRoomNote", (el) => el.textContent);
+      assert(note.includes("Note for AI agents") && note.includes(`${cli} file put`), `agent note: ${note}`);
       assert(await visible(a, "#joinAboutField"), "the first to post is asked what the room is for");
       await shot(a, "flow-02-room-name-prompt-1280x720");
     });
@@ -426,15 +431,20 @@ async function main() {
     const fileBytes = randomBytes(200_000 + 12_345);
     const filePath = join(work, "build-log.bin");
     await writeFile(filePath, fileBytes);
+    const pdfBytes = Buffer.concat([Buffer.from("%PDF-1.4\n"), randomBytes(30_000)]);
+    const pdfPath = join(work, "Owner — Урок 1.pdf");
+    await writeFile(pdfPath, pdfBytes);
 
-    await step("A attaches a file; it is encrypted in the browser; B downloads identical bytes, A too from the Files tab", async () => {
+    await step("A attaches two files at once; each is encrypted in the browser; B downloads identical bytes, A too from the Files tab", async () => {
       const input = await a.$("#fileInput");
-      await input.uploadFile(filePath);
-      await waitText(a, "#attachBar", "build-log.bin");
+      await input.uploadFile(filePath, pdfPath);
+      await waitText(a, "#attachBar", "2 files");
       await a.type("#composerInput", "Build log attached @bobur");
       await a.keyboard.press("Enter");
       await waitText(a, ".chip__name", "build-log.bin");
       await waitText(b, ".chip__name", "build-log.bin", 20_000);
+      await waitText(b, ".chip__name", "Owner — Урок 1.pdf", 20_000);
+      assert(!(await visible(a, "#attachBar")), "both files sent, nothing left staged");
       const cid = await messageCid(b, "Build log attached");
       await clickLive(b, `.msg[data-cid="${cid}"] [data-download]`);
       const saved = await waitForDownload(dlB, "build-log.bin");
@@ -443,7 +453,7 @@ async function main() {
       await b.click('.tabs [data-side="files"]');
       await waitText(b, "#sideList .item__title", "build-log.bin");
       await a.click('.tabs [data-side="files"]');
-      await clickLive(a, "#sideList [data-download]");
+      await clickLive(a, `#sideList [data-download="${cid}"]`);
       const own = await readFile(await waitForDownload(dlA, "build-log.bin"));
       assert(sha256(own) === sha256(fileBytes), "the uploader downloads identical bytes from the Files tab");
       await a.click('.tabs [data-side="tasks"]');

@@ -139,7 +139,7 @@ export async function startMockServer(port = 0, options: MockServerOptions = {})
       return res.end();
     }
     if (url.pathname === "/api/v1/info") {
-      return json(res, 200, { version: "mock", cli_command: "lincor", limits: { max_event_bytes: 131072, max_blob_bytes: 12582912 } });
+      return json(res, 200, { version: "mock", cli_command: "npx -y agents-room@0.0.0-mock", limits: { max_event_bytes: 131072, max_blob_bytes: 12582912 } });
     }
     if (options.staticDir && req.method === "GET") {
       const wantsHtml = /text\/html/.test(req.headers.accept ?? "");
@@ -151,7 +151,7 @@ export async function startMockServer(port = 0, options: MockServerOptions = {})
     }
     if (url.pathname === "/r" || url.pathname === "/llms.txt") {
       res.writeHead(200, { "Content-Type": "text/markdown; charset=utf-8" });
-      return res.end("# lincor room link\n\nRun: lincor join '<the full link>'\n");
+      return res.end("# Agents secure chat: room link\n\nRun: npx -y agents-room@0.0.0-mock join '<the full link>'\n");
     }
     const m = url.pathname.match(/^\/api\/v1\/rooms\/([A-Za-z0-9_-]{43})(\/[a-z]+)?(?:\/([A-Za-z0-9_-]{22}))?$/);
     if (!m) return fail(res, 404, "not_found");

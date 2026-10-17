@@ -197,6 +197,34 @@ describe("lincor service", () => {
     expect(joined).not.toMatch(/(^|[\s(])agents-room (send|profile|wait|task)/m);
   });
 
+  it("shares several files in one command, checks sizes first, and explains a blocked network", async () => {
+    const owner = dev("files-owner");
+    const { link } = owner.lincor().create({ about: "Course PDFs" }).data as { link: string };
+    await owner.lincor().send("hi");
+    const up = dev("files-up", { "docs/Owner — Урок 1.pdf": "%PDF-1.4 one", "docs/Owner — Урок 2.pdf": "%PDF-1.4 two" });
+    const joined = (await up.lincor().join(link, {})).text;
+    expect(joined).toContain('- Share files: agents-room file put <file> [more files] [--text "…"]');
+    const r = await up.cli(["file", "put", "docs/Owner — Урок 1.pdf", "docs/Owner — Урок 2.pdf", "--text", "lessons"]);
+    expect(r.code, r.err).toBe(0);
+    expect(r.out).toMatch(/Shared file [0-9a-f]{8} "Owner — Урок 1.pdf" \(1 KB, encrypted before upload\)\.\nShared file [0-9a-f]{8} "Owner — Урок 2.pdf"/);
+    const files = (await owner.lincor().files()).text;
+    expect(files).toMatch(/"Owner — Урок 1.pdf" \(.*\): lessons/);
+    expect(files).toContain("Owner — Урок 2.pdf");
+    // Too large: refused before anything is uploaded.
+    writeFileSync(join(up.project, "big.bin"), Buffer.alloc(10 * 1024 * 1024 + 1));
+    await expect(up.lincor().filePut(["docs/Owner — Урок 1.pdf", "big.bin"])).rejects.toThrow(/big\.bin is 10\.0 MB; files are limited to 10 MB each.*Nothing was uploaded/);
+    expect((await owner.lincor().files()).text.match(/Урок 1/g)?.length).toBe(1);
+    // A sandbox that cannot reach the server is told what the user can do.
+    const offline = new Lincor({
+      cwd: up.project,
+      env: up.env as NodeJS.ProcessEnv,
+      fetch: async () => {
+        throw Object.assign(new TypeError("fetch failed"), { cause: { code: "ENOTFOUND" } });
+      },
+    });
+    await expect(offline.read()).rejects.toThrow(/fetch failed \(ENOTFOUND\)\. If you run in a sandbox .* allow 127\.0\.0\.1:\d+ in the app's settings \(Claude apps: Settings → Capabilities\), or open the link in a browser/);
+  });
+
   it("keeps the name and role given to join --no-intro for the first post (regression)", async () => {
     const owner = dev("nointro-owner");
     const { link } = owner.lincor().create().data as { link: string };
@@ -379,6 +407,10 @@ describe("MCP server", () => {
     expect(joined).toContain("MCP test room: ship it.");
     expect(joined).toContain("Rules (they apply in every room):");
     expect(text(await unityClient.callTool({ name: "chat_about", arguments: {} }))).toContain("MCP test room: ship it.");
+    writeFileSync(join(unity.project, "a.txt"), "first");
+    writeFileSync(join(unity.project, "b.txt"), "second");
+    const shared = text(await unityClient.callTool({ name: "chat_file_share", arguments: { paths: [join(unity.project, "a.txt"), join(unity.project, "b.txt")] } }));
+    expect(shared.split("\n").filter((l) => l.startsWith("Shared file"))).toHaveLength(2);
 
     const waiting = feClient.callTool({ name: "chat_wait", arguments: { timeout_sec: 10 } });
     await new Promise((r) => setTimeout(r, 300));

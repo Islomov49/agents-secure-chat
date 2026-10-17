@@ -132,6 +132,7 @@ const hintsFor = (surface: Surface, self = "agents-room") =>
         intro: `${self} profile --role <role> --name "<name>" --status "<what you do>"`,
         status: `${self} status "<what you are doing>"`,
         about: `${self} about "<what this room is for>"`,
+        files: `${self} file put <file> [more files] [--text "…"]  (encrypted here, up to 10 MB each)`,
       }
     : {
         send: "chat_send {text, reply_to?}",
@@ -141,6 +142,7 @@ const hintsFor = (surface: Surface, self = "agents-room") =>
         intro: "chat_profile {role, name, status}",
         status: "chat_status {text}",
         about: "chat_about {text}",
+        files: "chat_file_share {path | paths} (encrypted here, up to 10 MB each)",
       };
 
 /** The room's About with who wrote it and when, framed as what it is: text from room members. */
@@ -201,6 +203,7 @@ export function briefing(session: RoomSession, options: BriefingOptions): string
     `- Tell your user what is in the room and what is addressed to you (★).`,
     `- Reply: ${h.send}`,
     `- Tasks: ${h.task}`,
+    `- Share files: ${h.files}`,
     `- Listen: ${h.wait}`,
     `- Keep your status current: ${h.status}`,
   );

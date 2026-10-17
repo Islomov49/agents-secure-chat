@@ -22,6 +22,7 @@ import { $, announce, copyText, reducedMotion, replaceHtml, saveBytes, toast } f
 import { Live, type EventSource, type LiveStats } from "./live";
 import { MentionPicker } from "./mentions";
 import { aboutHtml, announcementFor, contractsHtml, emptyFeedHtml, feedHtml, filesHtml, nameOf, peopleHtml, tasksHtml, type RenderContext } from "./render";
+import { FALLBACK_CLI } from "./home";
 import { loadRecord, saveRecord, setCurrent, type RoomRecord, type Stores } from "./storage";
 import {
   STATUS_LABEL,
@@ -65,6 +66,9 @@ declare global {
     __lincor?: LincorDebug;
   }
 }
+
+/** The command agents run to use the CLI; the server writes it into the page (#agentCli). */
+const agentCli = (): string => document.getElementById("agentCli")?.textContent?.trim() || FALLBACK_CLI;
 
 export function errorText(e: unknown): string {
   if (e instanceof ApiError) {
@@ -114,7 +118,8 @@ class RoomController {
   view: View = "chat";
   sideTab: SideTab = "tasks";
   replyTo?: string;
-  pendingFile?: File;
+  /** Files staged in the composer; each is shared as its own encrypted file event. */
+  pendingFiles: File[] = [];
   pendingAction: (() => Promise<unknown>) | null = null;
   busy = false;
   contract?: { name: string; version: number };
@@ -158,7 +163,7 @@ class RoomController {
     this.setView("chat");
     this.setSide("tasks");
     this.setReply(undefined);
-    this.setFile(undefined);
+    this.setFiles([]);
     this.hideJoin();
     this.autosize();
     $("jumpLatest").hidden = true;
@@ -240,6 +245,7 @@ class RoomController {
 
   renderNow() {
     const ctx = this.context();
+    document.querySelectorAll<HTMLElement>("[data-agent-cli]").forEach((el) => (el.textContent = agentCli()));
     const state = this.session.state;
     const title = roomTitle(state);
     $("roomName").textContent = title;
@@ -284,13 +290,15 @@ class RoomController {
     const scroller = $("feedScroll");
     const nearBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
     let html: string;
+    let empty = true;
     if (!this.loaded) {
       html = `<div class="empty"><p>${escapeHtml(this.loadError || "Decrypting the room in this browser…")}</p></div>`;
     } else {
       const items = feedItems(ctx.state, ctx.me, ctx.now);
-      html = hasConversation(items) ? feedHtml(ctx, items) : emptyFeedHtml;
+      empty = !hasConversation(items);
+      html = empty ? emptyFeedHtml(agentCli()) : feedHtml(ctx, items);
     }
-    list.classList.toggle("is-empty", !this.loaded || html === emptyFeedHtml);
+    list.classList.toggle("is-empty", empty);
     replaceHtml(list, html);
     const count = list.children.length;
     if (nearBottom || this.forceBottom) {
@@ -383,10 +391,14 @@ class RoomController {
     }
   }
 
-  setFile(file: File | undefined) {
-    this.pendingFile = file;
-    $("attachBar").hidden = !file;
-    $("attachName").textContent = file ? `${file.name} · ${formatBytes(file.size)}` : "";
+  setFiles(files: File[]) {
+    this.pendingFiles = files;
+    const bar = $("attachBar");
+    bar.hidden = !files.length;
+    const total = files.reduce((n, f) => n + f.size, 0);
+    $("attachName").textContent =
+      files.length === 1 ? `${files[0].name} · ${formatBytes(files[0].size)}` : files.length ? `${files.length} files · ${formatBytes(total)}` : "";
+    $("attachName").title = files.map((f) => f.name).join("\n");
   }
 
   autosize() {
@@ -476,45 +488,58 @@ class RoomController {
   async send(): Promise<void> {
     if (this.busy) return;
     const raw = input().value.replace(/^\s*\n/, "").trimEnd();
-    const file = this.pendingFile;
-    if (!raw.trim() && !file) return;
+    const files = this.pendingFiles;
+    if (!raw.trim() && !files.length) return;
     if (this.session.deleted) return toast("This room is deleted. Restore it to post again.", "error");
     if (!this.session.joined) return this.askJoin(() => this.send());
-    if (file && file.size > MAX_FILE_BYTES) return toast(`Files are limited to ${MAX_FILE_BYTES / 1024 / 1024} MB.`, "error");
+    const tooBig = files.find((f) => f.size > MAX_FILE_BYTES);
+    if (tooBig) return toast(`${tooBig.name} is ${formatBytes(tooBig.size)}. Files are limited to ${MAX_FILE_BYTES / 1024 / 1024} MB.`, "error");
     this.setBusy(true);
+    let sent = 0;
     try {
-      const bytes = file ? new Uint8Array(await file.arrayBuffer()) : undefined;
-      const mime = file?.type || "application/octet-stream";
+      // One encrypted file event per file; the text goes with the first one (or alone, without files).
+      const share = async (file: File, extra: { text?: string; replyTo?: string } = {}) => {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const event = await this.session.shareFile(bytes, file.name, file.type || "application/octet-stream", extra);
+        sent++;
+        return event.cid;
+      };
       if (this.mode === "task") {
         const task = parseTaskInput(raw);
-        let refs: string[] | undefined;
-        if (file && bytes) refs = [(await this.session.shareFile(bytes, file.name, mime)).cid];
-        if (task) await this.session.createTask({ ...task, ...(refs ? { refs } : {}) });
-      } else if (file && bytes) {
-        await this.session.shareFile(bytes, file.name, mime, { ...(raw.trim() ? { text: raw } : {}), ...(this.replyTo ? { replyTo: this.replyTo } : {}) });
+        const refs: string[] = [];
+        for (const file of files) refs.push(await share(file));
+        if (task) await this.session.createTask({ ...task, ...(refs.length ? { refs } : {}) });
+      } else if (files.length) {
+        for (const [i, file] of files.entries()) {
+          await share(file, i === 0 ? { ...(raw.trim() ? { text: raw } : {}), ...(this.replyTo ? { replyTo: this.replyTo } : {}) } : {});
+        }
       } else {
         await this.session.say(raw, this.replyTo ? { replyTo: this.replyTo } : {});
       }
       input().value = "";
       this.setReply(undefined);
-      this.setFile(undefined);
+      this.setFiles([]);
       this.autosize();
       this.forceBottom = true;
     } catch (e) {
-      toast(errorText(e), "error");
+      // Files already shared stay shared; keep the rest staged so a retry sends only those.
+      if (sent) this.setFiles(files.slice(sent));
+      toast(sent ? `${sent} of ${files.length} files shared. ${errorText(e)}` : errorText(e), "error");
     } finally {
       this.setBusy(false);
       this.renderNow();
     }
   }
 
-  stageFile(file: File | undefined) {
-    if (!file) return;
-    if (file.size > MAX_FILE_BYTES) {
-      toast(`${file.name} is ${formatBytes(file.size)}. Files are limited to ${MAX_FILE_BYTES / 1024 / 1024} MB.`, "error");
-      return;
+  stageFiles(picked: File[]) {
+    if (!picked.length) return;
+    const tooBig = picked.filter((f) => f.size > MAX_FILE_BYTES);
+    if (tooBig.length) {
+      toast(`${tooBig.map((f) => `${f.name} (${formatBytes(f.size)})`).join(", ")}: files are limited to ${MAX_FILE_BYTES / 1024 / 1024} MB each.`, "error");
     }
-    this.setFile(file);
+    const ok = picked.filter((f) => f.size <= MAX_FILE_BYTES);
+    if (!ok.length) return;
+    this.setFiles([...this.pendingFiles, ...ok]);
     input().focus();
   }
 
@@ -884,10 +909,10 @@ export function initRoom() {
   on("attachBtn", "click", () => $<HTMLInputElement>("fileInput").click());
   on("fileInput", "change", (_e, room) => {
     const fi = $<HTMLInputElement>("fileInput");
-    room.stageFile(fi.files?.[0]);
+    room.stageFiles([...(fi.files ?? [])]);
     fi.value = "";
   });
-  on("attachCancel", "click", (_e, room) => room.setFile(undefined));
+  on("attachCancel", "click", (_e, room) => room.setFiles([]));
   on("replyCancel", "click", (_e, room) => {
     room.setReply(undefined);
     input().focus();

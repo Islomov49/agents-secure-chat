@@ -146,10 +146,16 @@ export function createMcpServer(lincorFor: () => Lincor): McpServer {
 
   tool(
     "chat_file_share",
-    "Share a local file with the room (encrypted on this machine before upload, ≤10 MiB). Ask your user before sharing repository files.",
-    { path: z.string(), text: z.string().optional().describe("Caption; may mention @role"), reply_to: z.string().optional(), room },
+    "Share local files with the room (each encrypted on this machine before upload, up to 10 MB each). Use it when your user asks to upload or send files to the room; ask your user before sharing repository files they did not name.",
+    {
+      path: z.string().optional().describe("One file"),
+      paths: z.array(z.string()).optional().describe("Several files at once"),
+      text: z.string().optional().describe("Caption for the first file; may mention @role"),
+      reply_to: z.string().optional(),
+      room,
+    },
     false,
-    (l, a) => l.filePut(a.path, { text: a.text, replyTo: a.reply_to, room: a.room }),
+    (l, a) => l.filePut([...(a.path ? [a.path] : []), ...(a.paths ?? [])], { text: a.text, replyTo: a.reply_to, room: a.room }),
   );
 
   tool("chat_file_get", "Download and decrypt a shared file to a local path.", { file: z.string().describe("File id, blob id or name"), out_path: z.string().optional(), room }, false, (l, a) =>

@@ -30,7 +30,7 @@ Tasks, files, contracts
   agents-room task create "<title>" [--to <role>] [--desc <text>] [--accept <criterion>]... [--ref <text>]...
   agents-room task accept|start|done|block|reject|reopen <task-id> [--note <text>]
   agents-room task list [--mine] [--all] | task show <task-id>
-  agents-room file put <path> [--text <caption>] | file get <file-id> [-o <path>] | file list
+  agents-room file put <file> [more files] [--text <caption>] | file get <file-id> [-o <path>] | file list
   agents-room artifact put <name> <path | -> [--note <text>] | artifact get <name> [--version <n>] [-o <path>] | artifact list
 
 Agent integration
@@ -165,10 +165,10 @@ async function run(argv: string[]): Promise<Result | undefined> {
     }
     case "file": {
       const [verb, arg] = p;
-      if (verb === "put" || verb === "share") return lincor.filePut(arg ?? "", { text: o.text, replyTo: o.reply, room });
+      if (verb === "put" || verb === "share") return lincor.filePut(p.slice(1), { text: o.text, replyTo: o.reply, room });
       if (verb === "get") return lincor.fileGet(arg ?? "", o.out, room);
       if (verb === "list" || verb === "ls") return lincor.files(room);
-      throw new UserError("Usage: agents-room file put <path> | get <file-id> [-o path] | list");
+      throw new UserError("Usage: agents-room file put <file> [more files] | get <file-id> [-o path] | list");
     }
     case "artifact":
     case "contract": {

@@ -525,6 +525,7 @@ pre:hover > .pre__copy, .pre__copy:focus-visible, .pre__copy.is-done { opacity: 
 .log__tag { display: inline-block; min-width: 6ch; color: var(--faint); }
 .log__ok { color: var(--accent); }
 .log__wait { color: var(--amber); }
+.log__cmd { color: var(--text); overflow-wrap: anywhere; }
 .log .cursor { width: 8px; height: 15px; margin-left: 6px; vertical-align: -2px; }
 .empty--small {
   margin: 0; padding: 14px; max-width: none; display: block; text-align: left;

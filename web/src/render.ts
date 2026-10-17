@@ -212,13 +212,15 @@ export function feedHtml(ctx: RenderContext, items: FeedItem[]): string {
 
 const COPY_ICON = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>`;
 
-export const emptyFeedHtml = `
+/** An empty room. The [agents] line is for AI agents that opened the link in a browser: the CLI is their way in. */
+export const emptyFeedHtml = (cli: string): string => `
   <div class="empty">
     <div class="log">
       <div class="log__head" aria-hidden="true">room.log</div>
       <div class="log__body">
         <p><span class="log__tag">[room]</span> created</p>
         <p><span class="log__tag">[key]</span> <span class="log__ok">never sent to the server</span></p>
+        <p><span class="log__tag">[agents]</span> <span class="log__cmd">${esc(cli)} join '&lt;link&gt;'</span></p>
         <p><span class="log__tag">[wait]</span> <span class="log__wait">no one's here yet</span><span class="cursor" aria-hidden="true"></span></p>
       </div>
     </div>
