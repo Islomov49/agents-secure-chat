@@ -18,8 +18,9 @@ import {
   type RoomEvent,
   type TaskStatus,
 } from "@lincor/core";
-import { $, announce, copyText, replaceHtml, saveBytes, toast } from "./dom";
+import { $, announce, copyText, reducedMotion, replaceHtml, saveBytes, toast } from "./dom";
 import { Live, type EventSource, type LiveStats } from "./live";
+import { MentionPicker } from "./mentions";
 import { aboutHtml, announcementFor, contractsHtml, emptyFeedHtml, feedHtml, filesHtml, nameOf, peopleHtml, tasksHtml, type RenderContext } from "./render";
 import { loadRecord, saveRecord, setCurrent, type RoomRecord, type Stores } from "./storage";
 import {
@@ -30,6 +31,7 @@ import {
   feedItems,
   formatBytes,
   hasConversation,
+  mentionOptions,
   parseTaskInput,
   roomTitle,
   safeFileName,
@@ -102,6 +104,8 @@ class RoomController {
   private loadError = "";
   private renderQueued = false;
   private forceBottom = true;
+  /** Feed items the reader has seen at the bottom; more while scrolled up shows "New messages". */
+  private feedSeen = 0;
   private tick?: ReturnType<typeof setInterval>;
   private unread = 0;
   private debug: LincorDebug = { transport: "none", eventsVia: { ws: 0, poll: 0, sync: 0 } };
@@ -157,6 +161,7 @@ class RoomController {
     this.setFile(undefined);
     this.hideJoin();
     this.autosize();
+    $("jumpLatest").hidden = true;
     this.renderNow();
     this.tick = setInterval(() => this.render(), 30_000);
 
@@ -287,10 +292,28 @@ class RoomController {
     }
     list.classList.toggle("is-empty", !this.loaded || html === emptyFeedHtml);
     replaceHtml(list, html);
+    const count = list.children.length;
     if (nearBottom || this.forceBottom) {
       scroller.scrollTop = scroller.scrollHeight;
       if (this.loaded) this.forceBottom = false;
-    }
+      this.feedSeen = count;
+    } else if (count > this.feedSeen) $("jumpLatest").hidden = false;
+  }
+
+  /** The reader is at the newest message again. */
+  feedAtBottom() {
+    this.feedSeen = $("feedList").children.length;
+    $("jumpLatest").hidden = true;
+  }
+
+  /** A file dropped on the room or pasted into the composer. */
+  attachFrom(files: FileList | null | undefined) {
+    const file = files?.[0];
+    if (!file) return;
+    if (this.session.deleted) return toast("This room is deleted. Restore it to post again.", "error");
+    if (this.view !== "chat") this.setView("chat");
+    if (files.length > 1) toast(`One file per message: attached ${file.name}`);
+    this.stageFile(file);
   }
 
   private renderSide(ctx: RenderContext) {
@@ -803,6 +826,8 @@ export function initRoom() {
     if (go) return room.goto(go.dataset.goto!);
     const invite = t.closest<HTMLElement>("[data-copy-invite]");
     if (invite) return room.copyInvite(invite);
+    const code = t.closest<HTMLElement>("[data-copy-code]");
+    if (code) return void copyText(code.parentElement?.querySelector("code")?.textContent ?? "", code);
   });
   on("sideList", "click", (e, room) => {
     const t = e.target as HTMLElement;
@@ -830,13 +855,32 @@ export function initRoom() {
     e.preventDefault();
     void room.send();
   });
+  const mentions = new MentionPicker(input(), $("mentionList"), (query) =>
+    current ? mentionOptions(current.session.state, current.session.identity.id, query) : [],
+  );
   on("composerInput", "keydown", (e) => {
+    if (mentions.handleKey(e)) return;
     if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
       e.preventDefault();
       $<HTMLFormElement>("composer").requestSubmit();
     } else if (e.key === "Escape" && current?.replyTo) current.setReply(undefined);
   });
-  on("composerInput", "input", (_e, room) => room.autosize());
+  on("composerInput", "input", (_e, room) => {
+    room.autosize();
+    mentions.update();
+  });
+  // The caret moved without typing.
+  on("composerInput", "click", () => mentions.update());
+  on("composerInput", "keyup", (e) => {
+    if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) mentions.update();
+  });
+  // A pasted file (a screenshot, say) is attached like one picked with the paperclip.
+  on("composerInput", "paste", (e, room) => {
+    const data = e.clipboardData;
+    if (!data?.files.length || data.getData("text/plain")) return;
+    e.preventDefault();
+    room.attachFrom(data.files);
+  });
   on("attachBtn", "click", () => $<HTMLInputElement>("fileInput").click());
   on("fileInput", "change", (_e, room) => {
     const fi = $<HTMLInputElement>("fileInput");
@@ -930,6 +974,40 @@ export function initRoom() {
   let stick = true;
   scroller.addEventListener("scroll", () => {
     stick = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
+    if (stick) current?.feedAtBottom();
+  });
+  on("jumpLatest", "click", () => {
+    scroller.scrollTo({ top: scroller.scrollHeight, behavior: reducedMotion() ? "auto" : "smooth" });
+    input().focus({ preventScroll: true });
+  });
+
+  // Drop a file anywhere in the room to attach it. dragenter and dragleave also fire for children, hence the depth.
+  const roomEl = $("room");
+  let dragDepth = 0;
+  const withFiles = (e: DragEvent) => !!current && [...(e.dataTransfer?.types ?? [])].includes("Files");
+  const endDrag = () => {
+    dragDepth = 0;
+    roomEl.classList.remove("is-drop");
+  };
+  roomEl.addEventListener("dragenter", (e) => {
+    if (!withFiles(e)) return;
+    e.preventDefault();
+    dragDepth++;
+    roomEl.classList.add("is-drop");
+  });
+  roomEl.addEventListener("dragover", (e) => {
+    if (!withFiles(e)) return;
+    e.preventDefault();
+    e.dataTransfer!.dropEffect = "copy";
+  });
+  roomEl.addEventListener("dragleave", () => {
+    if (--dragDepth <= 0) endDrag();
+  });
+  roomEl.addEventListener("drop", (e) => {
+    if (!withFiles(e)) return;
+    e.preventDefault();
+    endDrag();
+    current?.attachFrom(e.dataTransfer?.files);
   });
   if (typeof ResizeObserver !== "undefined") {
     new ResizeObserver(() => {

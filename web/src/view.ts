@@ -1,5 +1,5 @@
 // Pure view-model helpers: no DOM, no network. Everything here is unit-tested (web/test/view.test.ts).
-import type { ClientKind, Profile, RoomEvent, RoomState, TaskStatus } from "@lincor/core";
+import { BROADCAST_HANDLES, shortId, slug, type ClientKind, type Profile, type RoomEvent, type RoomState, type TaskStatus } from "@lincor/core";
 
 const HTML_ESCAPES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
 
@@ -125,6 +125,92 @@ export function parseTaskInput(input: string): ComposedTask | null {
     ...(description ? { description } : {}),
     ...(handle ? { assignee: "@" + handle } : {}),
   };
+}
+
+/* ---------- @mention suggestions ---------- */
+
+/** The `@word` being typed at the caret: where its `@` is and what follows it so far. Null when not in a mention. */
+export function mentionQuery(text: string, caret: number): { start: number; query: string } | null {
+  let i = caret;
+  while (i > 0 && /[A-Za-z0-9_.-]/.test(text[i - 1])) i--;
+  const at = i - 1;
+  if (at < 0 || text[at] !== "@") return null;
+  if (at > 0 && /[A-Za-z0-9_.-]/.test(text[at - 1])) return null; // an e-mail address, not a mention
+  const query = text.slice(i, caret);
+  if (query.startsWith(".") || query.startsWith("-")) return null;
+  return { start: at, query };
+}
+
+export interface MentionOption {
+  /** What gets inserted after `@`; always a handle that addresses someone (PROTOCOL §5.5). */
+  handle: string;
+  kind: "person" | "role" | "all";
+  label: string;
+  detail: string;
+  /** For people: the avatar letter and whether they are a human. */
+  initial?: string;
+  human?: boolean;
+}
+
+/**
+ * Who `@<query>` can address, best match first: people other than the viewer (by name, or by fingerprint when two
+ * share a name), roles that several people share or that differ from a name, and `@all`.
+ */
+export function mentionOptions(state: RoomState, me: string | undefined, query: string, limit = 8): MentionOption[] {
+  const q = query.toLowerCase();
+  const people = [...state.participants.values()].filter((p) => p.profile && !p.left && p.id !== me);
+  const ambiguous = state.ambiguousNames();
+  const ranked: { option: MentionOption; score: number; order: number }[] = [];
+  const add = (option: MentionOption, keys: string[], order: number) => {
+    const exact = option.handle.startsWith(q);
+    if (!exact && !keys.some((k) => k.startsWith(q))) return;
+    ranked.push({ option, score: exact ? 0 : 1, order });
+  };
+
+  const taken = new Set<string>();
+  people.forEach((p, i) => {
+    const profile = p.profile!;
+    const name = slug(profile.name);
+    const id = shortId(p.id).toLowerCase();
+    const handle = name && !ambiguous.has(state.displayName(p.id)) ? name : id;
+    taken.add(handle);
+    const detail = [profile.role, clientLabel(profile.client)].filter(Boolean).join(" · ");
+    add(
+      { handle, kind: "person", label: ambiguous.has(state.displayName(p.id)) ? `${profile.name} · ${shortId(p.id)}` : profile.name, detail, initial: initialOf(profile.name), human: profile.kind === "human" },
+      [...name.split("-"), slug(profile.role ?? ""), id],
+      i,
+    );
+  });
+
+  const roles = new Map<string, { label: string; names: string[] }>();
+  for (const p of people) {
+    const role = slug(p.profile!.role ?? "");
+    if (!role) continue;
+    const entry = roles.get(role) ?? { label: p.profile!.role!, names: [] };
+    entry.names.push(p.profile!.name);
+    roles.set(role, entry);
+  }
+  [...roles].forEach(([role, { label, names }], i) => {
+    if (taken.has(role) || BROADCAST_HANDLES.includes(role)) return;
+    const who = names.length === 1 ? names[0] : `${names.length} people`;
+    add({ handle: role, kind: "role", label, detail: `role · ${who}` }, [], 1000 + i);
+  });
+
+  for (const handle of q ? BROADCAST_HANDLES : ["all"]) {
+    add({ handle, kind: "all", label: handle, detail: "everyone in the room" }, [], 2000);
+  }
+  return ranked
+    .sort((a, b) => a.score - b.score || a.order - b.order)
+    .slice(0, limit)
+    .map((r) => r.option);
+}
+
+/** The composer text with the mention at `start..caret` replaced by `@handle `, and where the caret goes. */
+export function insertMention(text: string, start: number, caret: number, handle: string): { text: string; caret: number } {
+  const after = text.slice(caret).replace(/^[A-Za-z0-9_.-]*/, "");
+  const space = after.startsWith(" ") ? "" : " ";
+  const inserted = `@${handle}${space}`;
+  return { text: text.slice(0, start) + inserted + after, caret: start + inserted.length + (space ? 0 : 1) };
 }
 
 /* ---------- Labels and formatting ---------- */

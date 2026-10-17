@@ -28,6 +28,10 @@ export interface RenderContext {
 const FILE_ICON = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>`;
 const DOC_ICON = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3h8l4 4v14H4V3z"/><path d="M8 12h8M8 16h5M8 8h4"/></svg>`;
 
+/** Adds a Copy button to code blocks. renderText escapes the room's text, so every `<pre><code>` here is its own. */
+const withCodeCopy = (html: string) =>
+  html.replaceAll("<pre><code>", `<pre><button class="pre__copy" type="button" data-copy-code data-done="Copied" aria-label="Copy code">Copy</button><code>`);
+
 /** Display name, with the fingerprint when two participants use the same name. */
 export function nameOf(ctx: Pick<RenderContext, "state">, id: string, ambiguous = ctx.state.ambiguousNames()): string {
   const name = ctx.state.displayName(id);
@@ -113,7 +117,7 @@ function taskCard(ctx: RenderContext, task: Task | undefined, fallback: EventOf<
     <article class="task-card"${task ? ` data-task="${esc(task.id)}"` : ""}>
       <div class="task-card__top"><span class="status status--${esc(t.status)}">${esc(STATUS_LABEL[t.status] ?? t.status)}</span>${t.assignee ? `<span class="pill">${esc(t.assignee)}</span>` : ""}</div>
       <h3>${esc(t.title)}</h3>
-      ${t.description ? `<div class="task-card__desc">${renderText(t.description, textOptions)}</div>` : ""}
+      ${t.description ? `<div class="task-card__desc">${withCodeCopy(renderText(t.description, textOptions))}</div>` : ""}
       ${t.acceptance.length ? `<ul>${t.acceptance.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}
       ${refs}
     </article>`;
@@ -187,7 +191,7 @@ function eventHtml(ctx: RenderContext, item: Extract<FeedItem, { kind: "event" }
           <time class="msg__time" datetime="${new Date(e.ts).toISOString()}" title="${esc(new Date(e.ts).toLocaleString("en"))}">${esc(formatTime(e.ts))}</time>
           ${canReply ? `<span class="msg__actions"><button class="link-btn" type="button" data-reply="${esc(e.cid)}" data-focus="reply:${esc(e.cid)}" aria-label="Reply to ${esc(name)}">Reply</button></span>` : ""}
         </div>
-        ${body ? `<div class="msg__body">${renderText(body, textOptions)}</div>` : ""}
+        ${body ? `<div class="msg__body">${withCodeCopy(renderText(body, textOptions))}</div>` : ""}
         ${extra}
       </div>
     </article>`;

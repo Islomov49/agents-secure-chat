@@ -348,7 +348,15 @@ async function main() {
       assert(cid, "found A's message");
       await clickLive(b, `[data-reply="${cid}"]`);
       await waitText(b, "#replyBar", "Replying to Kamola");
-      await b.type("#composerInput", "@kamola looks good, I'll take the payment screen");
+      // Typing @ suggests who to address; Enter inserts the handle instead of sending.
+      await b.type("#composerInput", "@kam");
+      await b.waitForSelector("#mentionList:not([hidden])");
+      await waitText(b, "#mentionList .mention-opt", "Kamola");
+      await shot(b, "flow-03a-mention-suggestions-1280x720");
+      await b.keyboard.press("Enter");
+      assert((await b.$eval("#composerInput", (t) => t.value)) === "@kamola ", "Enter inserts the picked handle");
+      assert(!(await visible(b, "#mentionList")), "suggestions close after picking");
+      await b.type("#composerInput", "looks good, I'll take the payment screen");
       await b.keyboard.press("Enter");
       await b.waitForSelector("#joinForm:not([hidden])");
       await waitText(b, "#joinTitle", "tell the room who you are");
@@ -389,7 +397,10 @@ async function main() {
       await a.click('.segment [data-mode="task"]');
       await waitText(a, "#sendBtn", "Create task");
       await a.click("#composerInput");
-      await a.type("#composerInput", "Ship the payment screen @bobur");
+      await a.type("#composerInput", "Ship the payment screen @bo");
+      await waitText(a, "#mentionList .mention-opt", "Bobur");
+      await a.keyboard.press("Tab");
+      assert((await a.$eval("#composerInput", (t) => t.value)) === "Ship the payment screen @bobur ", "Tab inserts the assignee");
       await shiftEnter(a);
       await a.type("#composerInput", "Use the receipt view from the contract.");
       await a.keyboard.press("Enter");
@@ -416,7 +427,7 @@ async function main() {
     const filePath = join(work, "build-log.bin");
     await writeFile(filePath, fileBytes);
 
-    await step("A attaches a file; it is encrypted in the browser; B downloads identical bytes", async () => {
+    await step("A attaches a file; it is encrypted in the browser; B downloads identical bytes, A too from the Files tab", async () => {
       const input = await a.$("#fileInput");
       await input.uploadFile(filePath);
       await waitText(a, "#attachBar", "build-log.bin");
@@ -431,6 +442,11 @@ async function main() {
       assert(got.length === fileBytes.length && sha256(got) === sha256(fileBytes), "downloaded bytes are identical");
       await b.click('.tabs [data-side="files"]');
       await waitText(b, "#sideList .item__title", "build-log.bin");
+      await a.click('.tabs [data-side="files"]');
+      await clickLive(a, "#sideList [data-download]");
+      const own = await readFile(await waitForDownload(dlA, "build-log.bin"));
+      assert(sha256(own) === sha256(fileBytes), "the uploader downloads identical bytes from the Files tab");
+      await a.click('.tabs [data-side="tasks"]');
     });
 
     let agent;
@@ -464,6 +480,52 @@ async function main() {
       }));
       assert(check.xss === undefined && check.imgs === 0 && check.jsLinks === 0, `no script ran or was inserted: ${JSON.stringify(check)}`);
       assert(check.rejected === 1 && check.lock.includes("1 event could not be verified"), `ignored event counted: ${JSON.stringify(check)}`);
+    });
+
+    await step("Feed and composer conveniences: copy a code block, New messages while scrolled up, paste or drop a file", async () => {
+      await agent.say("Run the web tests:\n```\nnpm test -w @lincor/web\n```");
+      await waitText(a, ".msg__body pre code", "npm test -w @lincor/web", 20_000);
+      const cid = await messageCid(a, "Run the web tests");
+      await clickLive(a, `.msg[data-cid="${cid}"] [data-copy-code]`);
+      await waitText(a, `.msg[data-cid="${cid}"] [data-copy-code]`, "Copied");
+      await shot(a, "flow-05b-code-copied-1280x720");
+      const code = await a.evaluate(() => navigator.clipboard.readText()).catch(() => "");
+      if (code) assert(code === "npm test -w @lincor/web", `copied code: ${JSON.stringify(code)}`);
+
+      // Scrolled up into the history, a new message shows "New messages"; it takes you down and goes away.
+      const scrollable = await a.evaluate(() => {
+        const sc = document.getElementById("feedScroll");
+        sc.scrollTop = 0;
+        return sc.scrollHeight - sc.clientHeight;
+      });
+      assert(scrollable > 200, `the feed is long enough to scroll (${scrollable} px)`);
+      await sleep(150);
+      await agent.say("one more thing while you read the history");
+      await a.waitForSelector("#jumpLatest:not([hidden])", { timeout: 20_000 });
+      await shot(a, "flow-05a-new-messages-1280x720");
+      await a.click("#jumpLatest");
+      await a.waitForSelector("#jumpLatest", { hidden: true });
+
+      // A pasted or dropped file is attached like one picked with the paperclip.
+      const give = (how) =>
+        a.evaluate((how) => {
+          const dt = new DataTransfer();
+          dt.items.add(new File(["notes"], `${how}.txt`, { type: "text/plain" }));
+          if (how === "pasted") {
+            document.getElementById("composerInput").dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }));
+          } else {
+            for (const type of ["dragenter", "dragover", "drop"]) {
+              document.getElementById("feedScroll").dispatchEvent(new DragEvent(type, { dataTransfer: dt, bubbles: true, cancelable: true }));
+            }
+          }
+        }, how);
+      await give("pasted");
+      await waitText(a, "#attachBar", "pasted.txt");
+      await give("dropped");
+      await waitText(a, "#attachBar", "dropped.txt");
+      assert(!(await a.$eval("#room", (r) => r.classList.contains("is-drop"))), "drop overlay cleared");
+      await a.click("#attachCancel");
+      assert(!(await visible(a, "#attachBar")), "attachment removed");
     });
 
     await step("About: an agent rewrites it and hostile text stays text; A edits it in Room settings and B sees it live", async () => {
