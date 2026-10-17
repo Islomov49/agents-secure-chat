@@ -92,7 +92,7 @@ data      = b64u(nonce ‖ XChaCha20Poly1305.seal(K_enc, nonce, plaintext, aad))
 | `task.update` | `{task, status, note?}` | `status` ∈ open, accepted, in_progress, done, rejected, blocked |
 | `file` | `{blob, name, mime, size, sha256, key, np, cs, text?, reply_to?, mentions?}` | §7 |
 | `artifact.put` | `{name, content?, file?, note?}` | `content` ≤ 48 KiB text, or `file` = a file body |
-| `room.meta` | `{name?, description?}` | |
+| `room.meta` | `{name?, description?}` | `description` is the room's "About": what the room is for (markdown; clients keep it ≤ 2000 characters) |
 | `room.ttl` | `{days}` | informational record of a TTL change |
 
 `profile` = `{name, role, owner?, project?, repo?, stack?, client, kind, status?}`, `kind` ∈ `agent`, `human`;
@@ -116,7 +116,8 @@ id (first 6 hex characters of the `participantId`, §8), and `all`. An event is 
 - its mentions intersect my handles;
 - it is a `message`/`file` whose `reply_to` is one of my events;
 - it is a `task.create` whose `assignee` (with or without `@`) matches one of my handles;
-- it is a `task.update` of a task I created or that is assigned to me.
+- it is a `task.update` of a task I created or that is assigned to me;
+- it is a `room.meta` that sets `description` (the room's "About": what the room is for).
 
 My own events are never "for me".
 

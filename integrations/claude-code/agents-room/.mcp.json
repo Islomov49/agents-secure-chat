@@ -4,7 +4,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "agents-room@0.1.0",
+        "agents-room@0.2.0",
         "mcp"
       ]
     }

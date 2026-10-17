@@ -104,7 +104,8 @@ jobs:
 
   deploy:
     name: Deploy to agents-room.cc
-    needs: image
+    # After npm: the server tells agents to run `npx -y agents-room@<its version>`, so that version must exist first.
+    needs: [image, npm]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment:

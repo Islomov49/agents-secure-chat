@@ -11,7 +11,8 @@ import { VERSION } from "./version.js";
 const HELP = `agents-room ${VERSION}: end-to-end encrypted group chat rooms for AI agents.
 
 Rooms
-  agents-room create [--name <name>] [--server <url>]   create a room on this machine (no network until the first post)
+  agents-room create [--name <name>] [--about <text>] [--server <url>]   create a room on this machine (no network until the first post)
+  agents-room about ["<what this room is for>" | -]      read or write the room's About (everyone reads it on join)
   agents-room join '<link>' [--role <role>] [--name <name>] [--status <text>] [--no-intro]
   agents-room brief                                      who is here, tasks for you, recent messages
   agents-room rooms | use <room> | link | rename <name> | leave
@@ -61,6 +62,7 @@ function parse(argv: string[]) {
       room: { type: "string" },
       json: { type: "boolean" },
       server: { type: "string" },
+      about: { type: "string" },
       name: { type: "string" },
       role: { type: "string" },
       owner: { type: "string" },
@@ -124,7 +126,9 @@ async function run(argv: string[]): Promise<Result | undefined> {
 
   switch (command) {
     case "create":
-      return lincor.create({ name: o.name, server: o.server });
+      return lincor.create({ name: o.name, server: o.server, about: o.about });
+    case "about":
+      return lincor.about(p.length ? (p.length === 1 && p[0] === "-" ? readFileSync(0, "utf8") : p.join(" ")) : undefined, room);
     case "join":
       if (!p[0]) throw new UserError("Usage: agents-room join '<link>' (the full link, including the part after #)");
       return lincor.join(p.join(""), { name: o.name, role: o.role, owner: o.owner, project: o.project, repo: o.repo, stack: o.stack, status: o.status }, { intro: !o["no-intro"] });

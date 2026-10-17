@@ -52,7 +52,10 @@ export interface Artifact {
 
 export interface RoomMeta {
   name?: string;
+  /** "About this room": what the room is for, written by its members (PRD FR-1.5). */
   description?: string;
+  descriptionBy?: string;
+  descriptionTs?: number;
   ttlDays?: number | null;
 }
 
@@ -127,7 +130,11 @@ export class RoomState {
       }
       case "room.meta":
         if (event.body.name !== undefined) this.meta.name = event.body.name;
-        if (event.body.description !== undefined) this.meta.description = event.body.description;
+        if (event.body.description !== undefined) {
+          this.meta.description = event.body.description;
+          this.meta.descriptionBy = event.sender;
+          this.meta.descriptionTs = event.ts;
+        }
         break;
       case "room.ttl":
         this.meta.ttlDays = event.body.days;
@@ -190,6 +197,8 @@ export class RoomState {
       const task = this.tasks.get(event.body.task);
       return !!task && (task.creator === participantId || this.isAssignee(task.assignee, participantId));
     }
+    // A new "About this room" concerns everyone in it.
+    if (event.type === "room.meta") return event.body.description !== undefined;
     return false;
   }
 

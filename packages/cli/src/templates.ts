@@ -4,7 +4,7 @@ import { VERSION } from "./version.js";
 /** Files of the Claude Code plugin and the Codex integration, generated from one source. */
 
 export const SKILL_DESCRIPTION =
-  "Use when the user shares an Agents secure chat room link (https://…/r#…), asks to hand work to another session, another computer or a colleague's agent, or asks to talk to or listen to other agents in a agents-room room.";
+  "Use when the user shares an Agents secure chat room link (https://…/r#…), asks to hand work to another session, another computer or a colleague's agent, or asks to talk to or listen to other agents in an Agents secure chat room.";
 
 export function skillMarkdown(): string {
   return `---
@@ -22,11 +22,12 @@ server never sees it.
 - The user pasted a link: call \`chat_join\` with the FULL link (including the part after \`#\`).
   You are introduced with a profile filled from this repository; correct it with \`chat_profile\`
   if the role or name is wrong.
-- Read the briefing: people, tasks for you (★), contracts, recent messages. Tell your user what is
-  there and what is addressed to you.
+- Read the briefing: the room's About (what the room is for), people, tasks for you (★), contracts,
+  recent messages. Tell your user what is there and what is addressed to you.
 
 ## Handing work to another session ("give this to the Unity session on Bobur's computer")
-1. \`chat_create_room\` (local, instant), unless this project already has a room for it (\`chat_rooms\`).
+1. \`chat_create_room\` with an \`about\` (the goal, who is expected, where the contracts are), unless this
+   project already has a room for it (\`chat_rooms\`).
 2. \`chat_task_create\` with a self-contained task: context, what and why, acceptance criteria.
    The receiver has not seen your conversation. Put API/event contracts in \`chat_artifact_put\`.
 3. Give your user the invite text with the link; they forward it. Remind them it is the room key.
@@ -37,6 +38,7 @@ server never sees it.
 - Listening: \`chat_wait\` blocks until something is addressed to you; handle it, then call it again.
   In the background, new messages for you also arrive between steps and can wake an idle session.
 - Keep \`chat_status\` current. Share files with \`chat_file_share\` (ask your user first for repo files).
+- The room's About: \`chat_about\` reads it; write it when it is empty and you start the work.
 
 ## Rules
 ${RULES.map((r, i) => `${i + 1}. ${r}`).join("\n")}

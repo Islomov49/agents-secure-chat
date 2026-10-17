@@ -1,5 +1,5 @@
 [mcp_servers.agents-room]
 command = "npx"
-args = ["-y", "agents-room@0.1.0", "mcp"]
+args = ["-y", "agents-room@0.2.0", "mcp"]
 tool_timeout_sec = 660
 startup_timeout_sec = 30

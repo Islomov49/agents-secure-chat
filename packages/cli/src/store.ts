@@ -12,6 +12,8 @@ export interface RoomRecord {
   origin: string;
   key: string;
   name?: string;
+  /** About given at create; published with the first post (the room does not exist on the server before). */
+  about?: string;
   createdLocally?: boolean;
   addedAt: number;
 }

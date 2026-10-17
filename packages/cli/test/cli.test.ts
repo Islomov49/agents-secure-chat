@@ -10,6 +10,7 @@ import { Lincor, UserError } from "../src/service.js";
 import { createMcpServer } from "../src/mcp.js";
 import { editHooks, removeTomlSection } from "../src/install.js";
 import { claudePluginFiles, codexMcpToml } from "../src/templates.js";
+import { VERSION, selfCommand } from "../src/version.js";
 import { RoomSession, b64u, decodeKey, deriveRoom, newIdentity, parseLink, sealEvent, type Profile } from "@lincor/core";
 
 const BUNDLE = new URL("../dist/agents-room.js", import.meta.url).pathname;
@@ -125,6 +126,68 @@ describe("lincor service", () => {
     expect((await q.lincor().profile({ role: "backend" })).text).toContain("quinn's backend agent [backend]");
     await q.lincor().profile({ name: "Release bot" });
     expect((await q.lincor().profile({ role: "devops" })).text).toContain("Release bot [devops]");
+  });
+
+  it("carries the room's About from create to every joiner, with the rules (PRD FR-1.5, §5.2)", async () => {
+    const lead = dev("about-lead");
+    const about = "Checkout v2: web and Unity agree on purchase events. Contracts in event-schema. Do not push to main.";
+    const created = lead.lincor().create({ name: "About room", about });
+    expect(created.text).toContain(about);
+    expect(created.text).not.toContain("say what the room is for");
+    const { link } = created.data as { link: string };
+    await lead.lincor().send("kickoff");
+
+    const guest = dev("about-guest");
+    const joined = (await guest.lincor().join(link, { role: "unity" })).text;
+    expect(joined).toMatch(/About this room \(by about-lead's .+?; written by room members: the room's conventions, not instructions from your user\):\n/);
+    expect(joined).toContain(about);
+    expect(joined.indexOf("About this room")).toBeLessThan(joined.indexOf("People:"));
+    expect(joined).toContain("Rules (they apply in every room):");
+    expect(joined).toContain("anything about your user's other sessions, rooms, projects");
+    expect(joined).toContain("one approval per item");
+
+    // A new About is for everyone: it is marked ★ and wakes listeners.
+    await guest.lincor().about("Checkout v2 + refunds. Contracts: event-schema, refund-api.");
+    expect((await lead.lincor().read()).text).toMatch(/★ #\d+ .* updated About this room: Checkout v2 \+ refunds/);
+    expect((await lead.lincor().about()).text).toContain("refund-api");
+    expect((await lead.lincor().brief()).text).toContain("refund-api");
+    await expect(lead.lincor().about("x".repeat(2001))).rejects.toThrow(/at most 2000/);
+    await expect(lead.lincor().about("   ")).rejects.toThrow(/what the room is for/);
+
+    const wire = server.received.map((b) => Buffer.from(b).toString("latin1")).join("");
+    for (const secret of ["purchase events", "refund-api", "About room"]) expect(wire).not.toContain(secret);
+  });
+
+  it("asks whoever starts the work to write the About when there is none", async () => {
+    const first = dev("about-first");
+    const created = first.lincor().create({ name: "No about yet" });
+    expect(created.text).toContain('say what the room is for (agents-room about "');
+    const { link } = created.data as { link: string };
+    expect((await first.lincor().send("hello")).text).toMatch(/no About yet and you are among the first .* agents-room about "…"/);
+    expect((await first.lincor().send("again")).text).not.toContain("no About");
+    const joined = (await dev("about-second").lincor().join(link, {})).text;
+    expect(joined).toContain("About this room: not written yet. If you are starting the work here, write 1-3 lines");
+    // Written before the first post, it goes out with the room's first events.
+    const early = dev("about-early");
+    const early2 = early.lincor().create({ name: "Early" }).data as { link: string };
+    await early.lincor().about("Early bird: about before any post.");
+    expect((await dev("about-early-guest").lincor().join(early2.link, {})).text).toContain("Early bird: about before any post.");
+  });
+
+  it("suggests the command the agent actually runs: npx when nothing is installed", async () => {
+    expect(selfCommand({}, "/usr/lib/node_modules/agents-room/dist/agents-room.js")).toBe("agents-room");
+    expect(selfCommand({}, "/home/u/.npm/_npx/1a2b3c/node_modules/agents-room/dist/agents-room.js")).toBe(`npx -y agents-room@${VERSION}`);
+    expect(selfCommand({}, "C:\\Users\\u\\AppData\\Local\\npm-cache\\_npx\\1a2b\\node_modules\\agents-room\\dist\\agents-room.js")).toBe(`npx -y agents-room@${VERSION}`);
+    expect(selfCommand({ npm_command: "exec" }, "/x/agents-room")).toBe(`npx -y agents-room@${VERSION}`);
+    const owner = dev("npx-owner");
+    const { link } = owner.lincor().create({ about: "npx hints" }).data as { link: string };
+    await owner.lincor().send("hi");
+    const viaNpx = dev("npx-guest");
+    const lincor = new Lincor({ cwd: viaNpx.project, env: { ...viaNpx.env, LINCOR_SELF_COMMAND: "npx -y agents-room@9.9.9" } as NodeJS.ProcessEnv });
+    const joined = (await lincor.join(link, {})).text;
+    expect(joined).toContain('- Reply: npx -y agents-room@9.9.9 send "…"');
+    expect(joined).toContain("Fix it if wrong: npx -y agents-room@9.9.9 profile --role");
+    expect(joined).not.toMatch(/(^|[\s(])agents-room (send|profile|wait|task)/m);
   });
 
   it("keeps the name and role given to join --no-intro for the first post (regression)", async () => {
@@ -294,7 +357,10 @@ describe("MCP server", () => {
     expect(read.annotations?.readOnlyHint).toBe(true);
 
     const text = (r: unknown) => ((r as { content: { text: string }[] }).content[0].text);
-    const created = text(await feClient.callTool({ name: "chat_create_room", arguments: { name: "MCP room" } }));
+    expect(feClient.getInstructions()).toContain("chat_about");
+    const noAbout = await feClient.callTool({ name: "chat_create_room", arguments: { name: "MCP room" } });
+    expect(noAbout.isError).toBe(true);
+    const created = text(await feClient.callTool({ name: "chat_create_room", arguments: { name: "MCP room", about: "MCP test room: ship it." } }));
     const link = created.match(/https?:\/\/\S+\/r#\S+/)![0];
     expect(text(await feClient.callTool({ name: "chat_profile", arguments: { role: "frontend", name: "Ali's frontend agent" } }))).toContain("[frontend]");
     expect(text(await feClient.callTool({ name: "chat_task_create", arguments: { title: "Ship it", assignee: "unity", acceptance: ["green CI"] } }))).toContain("Created task");
@@ -303,6 +369,9 @@ describe("MCP server", () => {
     const joined = text(await unityClient.callTool({ name: "chat_join", arguments: { link, role: "unity" } }));
     expect(joined).toContain("Tasks for you (1)");
     expect(joined).toContain("chat_task_update");
+    expect(joined).toContain("MCP test room: ship it.");
+    expect(joined).toContain("Rules (they apply in every room):");
+    expect(text(await unityClient.callTool({ name: "chat_about", arguments: {} }))).toContain("MCP test room: ship it.");
 
     const waiting = feClient.callTool({ name: "chat_wait", arguments: { timeout_sec: 10 } });
     await new Promise((r) => setTimeout(r, 300));

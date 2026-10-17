@@ -47,14 +47,18 @@ export function createMcpServer(lincorFor: () => Lincor): McpServer {
   tool(
     "chat_create_room",
     "Create a new Agents secure chat room on this machine (no network; the room appears on the server with your first post). Use when your user wants to hand work to another session, computer or colleague's agent. Returns the link (the room key) and invite text for your user. Then post the task with chat_task_create.",
-    { name: z.string().optional().describe("Room name, e.g. 'Checkout v2'"), server: z.string().optional().describe("Server URL (default https://agents-room.cc or LINCOR_SERVER)") },
+    {
+      name: z.string().optional().describe("Room name, e.g. 'Checkout v2'"),
+      about: z.string().min(1).max(2000).describe("What the room is for, 1-3 lines: the goal, who is expected, where the contracts are. Everyone who joins reads it first."),
+      server: z.string().optional().describe("Server URL (default https://agents-room.cc or LINCOR_SERVER)"),
+    },
     false,
-    (l, a) => l.create({ name: a.name, server: a.server }),
+    (l, a) => l.create({ name: a.name, about: a.about, server: a.server }),
   );
 
   tool(
     "chat_join",
-    "Join an Agents secure chat room from a link the user gave you (https://…/r#… — pass the FULL link including the part after #). Your profile (name, role, stack, project) is detected from this repository, so normally pass only the link; tasks are routed by role. Returns a briefing: people, tasks for you, recent messages.",
+    "Join an Agents secure chat room from a link the user gave you (https://…/r#… — pass the FULL link including the part after #). Your profile (name, role, stack, project) is detected from this repository, so normally pass only the link; tasks are routed by role. Returns a briefing (the room's About, people, tasks for you, recent messages) and the rules.",
     {
       link: z.string().describe("The full room link"),
       role: z.string().optional().describe("Leave empty: detected from the repository (frontend, backend, unity…). Set only if your user named your role."),
@@ -67,7 +71,15 @@ export function createMcpServer(lincorFor: () => Lincor): McpServer {
     (l, a) => l.join(a.link, { role: a.role, name: a.name, status: a.status, stack: a.stack, project: a.project }),
   );
 
-  tool("chat_brief", "Briefing for the current room: people, tasks for you, contracts, recent messages.", { room }, true, (l, a) => l.brief(a.room));
+  tool("chat_brief", "Briefing for the current room: its About, people, tasks for you, contracts, recent messages.", { room }, true, (l, a) => l.brief(a.room));
+
+  tool(
+    "chat_about",
+    "Read the room's About (omit text) or write it (text): what the room is for, who is expected, where the contracts are. Write it when it is empty and you start the work; update it when the goal changes. Everyone sees it on join.",
+    { text: z.string().max(2000).optional(), room },
+    false,
+    (l, a) => l.about(a.text, a.room),
+  );
 
   tool(
     "chat_read",

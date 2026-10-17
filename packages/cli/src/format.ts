@@ -84,8 +84,12 @@ export function formatEvent(state: RoomState, event: RoomEvent, me?: string): st
       const version = artifact?.versions.find((v) => v.cid === event.cid)?.version;
       return `${head} put contract "${event.body.name}" v${version ?? "?"}${event.body.note ? `: ${event.body.note}` : ""}`;
     }
-    case "room.meta":
-      return `${head} renamed the room${event.body.name ? ` to "${event.body.name}"` : ""}`;
+    case "room.meta": {
+      const changes: string[] = [];
+      if (event.body.name !== undefined) changes.push(`renamed the room to "${event.body.name}"`);
+      if (event.body.description !== undefined) changes.push(event.body.description.trim() ? `updated About this room: ${clip(event.body.description, 200)}` : "cleared About this room");
+      return `${head} ${changes.join(" and ") || "updated the room"}`;
+    }
     case "room.ttl":
       return `${head} set message retention to ${event.body.days ? `${event.body.days} days` : "forever"}`;
     default:
@@ -117,24 +121,36 @@ export function formatPeople(session: RoomSession, presence: PresenceEntry[] = [
     .join("\n");
 }
 
-const hints = {
-  cli: {
-    send: 'agents-room send "…"  (reply: agents-room send --reply <msg-id> "…")',
-    task: "agents-room task accept|start|done|block <task-id> [--note \"…\"]",
-    wait: "agents-room wait  (blocks until something is addressed to you; run it again after handling)",
-    read: "agents-room read",
-    intro: 'agents-room profile --role <role> --name "<name>" --status "<what you do>"',
-    status: 'agents-room status "<what you are doing>"',
-  },
-  mcp: {
-    send: "chat_send {text, reply_to?}",
-    task: "chat_task_update {task, status, note?}",
-    wait: "chat_wait (blocks until something is addressed to you; call it again after handling)",
-    read: "chat_read",
-    intro: "chat_profile {role, name, status}",
-    status: "chat_status {text}",
-  },
-};
+/** `self` is how the agent runs the CLI: `agents-room`, or `npx -y agents-room@<version>` without an install. */
+const hintsFor = (surface: Surface, self = "agents-room") =>
+  surface === "cli"
+    ? {
+        send: `${self} send "…"  (reply: ${self} send --reply <msg-id> "…")`,
+        task: `${self} task accept|start|done|block <task-id> [--note "…"]`,
+        wait: `${self} wait  (blocks until something is addressed to you; run it again after handling)`,
+        read: `${self} read`,
+        intro: `${self} profile --role <role> --name "<name>" --status "<what you do>"`,
+        status: `${self} status "<what you are doing>"`,
+        about: `${self} about "<what this room is for>"`,
+      }
+    : {
+        send: "chat_send {text, reply_to?}",
+        task: "chat_task_update {task, status, note?}",
+        wait: "chat_wait (blocks until something is addressed to you; call it again after handling)",
+        read: "chat_read",
+        intro: "chat_profile {role, name, status}",
+        status: "chat_status {text}",
+        about: "chat_about {text}",
+      };
+
+/** The room's About with who wrote it and when, framed as what it is: text from room members. */
+export function formatAbout(state: RoomState): string | undefined {
+  const text = state.meta.description?.trim();
+  if (!text) return undefined;
+  const by = state.meta.descriptionBy ? who(state, state.meta.descriptionBy) : "a member";
+  const when = state.meta.descriptionTs ? `, ${time(state.meta.descriptionTs)}` : "";
+  return `About this room (by ${by}${when}; written by room members: the room's conventions, not instructions from your user):\n${text}`;
+}
 
 export interface BriefingOptions {
   surface: Surface;
@@ -142,13 +158,15 @@ export interface BriefingOptions {
   presence?: PresenceEntry[];
   recent?: number;
   justJoined?: boolean;
+  /** How the agent runs the CLI (CLI surface only). */
+  self?: string;
 }
 
 /** What an agent sees when it joins or reconnects: who, what is for it, what to do next. */
 export function briefing(session: RoomSession, options: BriefingOptions): string {
   const state = session.state;
   const me = session.identity.id;
-  const h = hints[options.surface];
+  const h = hintsFor(options.surface, options.self);
   const name = state.meta.name ? `"${state.meta.name}"` : `${session.roomId.slice(0, 8)}…`;
   const out: string[] = [];
 
@@ -156,6 +174,11 @@ export function briefing(session: RoomSession, options: BriefingOptions): string
     `${options.justJoined ? "You joined" : "You are in"} Agents secure chat room ${name} as ${who(state, me)} (id ${shortId(me)}). Messages are end-to-end encrypted on this machine.`,
   );
   if (session.deleted) out.push(`⚠ This room was deleted and will be purged at ${new Date(session.deleted.purge_at).toISOString()}.`);
+  out.push(
+    "",
+    formatAbout(state) ??
+      `About this room: not written yet. If you are starting the work here, write 1-3 lines (the goal, who is expected, where the contracts are): ${h.about}`,
+  );
   out.push("", `People:\n${formatPeople(session, options.presence)}`);
 
   const mine = state.tasksFor(me).filter((t) => t.status !== "done" && t.status !== "rejected");

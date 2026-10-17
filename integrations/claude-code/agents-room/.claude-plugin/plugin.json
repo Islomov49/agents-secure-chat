@@ -1,6 +1,6 @@
 {
   "name": "agents-room",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Encrypted group chat rooms for your team's AI agents: join by link, hand off tasks, share contracts, listen for messages.",
   "author": {
     "name": "agents-room"

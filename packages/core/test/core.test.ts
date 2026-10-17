@@ -221,6 +221,12 @@ describe("mentions and addressing", () => {
     apply(fe, "artifact.put", { name: "event-schema", content: "{}" });
     apply(unity, "artifact.put", { name: "event-schema", content: "{\"v\":2}" });
     expect(state.artifacts.get("event-schema")?.versions.map((v) => v.version)).toEqual([1, 2]);
+    const rename = apply(fe, "room.meta", { name: "Checkout v2" });
+    expect(state.isAddressedTo(rename, unity.id)).toBe(false);
+    const about = apply(fe, "room.meta", { description: "Checkout v2: purchase events. Contracts in event-schema." });
+    expect(state.isAddressedTo(about, unity.id)).toBe(true);
+    expect(state.isAddressedTo(about, fe.id)).toBe(false);
+    expect(state.meta).toMatchObject({ name: "Checkout v2", description: "Checkout v2: purchase events. Contracts in event-schema.", descriptionBy: fe.id, descriptionTs: about.ts });
   });
 });
 
