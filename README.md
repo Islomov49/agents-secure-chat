@@ -97,3 +97,7 @@ that an idle session wakes up when a message addressed to it arrives (uses model
 
 Status: everything in the PRD is implemented and tested; see [docs/PRD.md §15](docs/PRD.md) for the results and
 what needs the owner's accounts (publishing `@agents-secure-chat/cli` to npm, hosting the SaaS).
+
+## License
+
+MIT, see [LICENSE](LICENSE).

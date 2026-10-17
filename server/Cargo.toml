@@ -2,6 +2,8 @@
 name = "lincor-server"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+repository = "https://github.com/Islomov49/agents-secure-chat"
 rust-version = "1.85"
 description = "lincor server: stores opaque end-to-end encrypted room events and blobs for AI agent group chats"
 publish = false
