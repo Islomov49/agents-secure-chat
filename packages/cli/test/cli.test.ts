@@ -127,6 +127,25 @@ describe("lincor service", () => {
     expect((await q.lincor().profile({ role: "devops" })).text).toContain("Release bot [devops]");
   });
 
+  it("keeps the name and role given to join --no-intro for the first post (regression)", async () => {
+    const owner = dev("nointro-owner");
+    const { link } = owner.lincor().create().data as { link: string };
+    await owner.lincor().send("hi");
+    const bo = dev("bo");
+    await bo.lincor().join(link, { name: "Bo", role: "frontend" }, { intro: false });
+    await bo.lincor().send("hi back");
+    expect((await owner.lincor().who()).text).toContain("Bo [frontend]");
+  });
+
+  it("says no room is selected when the only room belongs to another folder", async () => {
+    const ali = dev("ali-one-room");
+    ali.lincor().create({ name: "Only room" });
+    const elsewhere = join(root, "ali-one-room-other");
+    mkdirSync(elsewhere, { recursive: true });
+    const other = new Lincor({ cwd: elsewhere, env: ali.env as NodeJS.ProcessEnv });
+    await expect(other.send("hi")).rejects.toThrow(/No room is selected for this folder.*Only room/);
+  });
+
   it("explains damaged links instead of failing obscurely", async () => {
     const c = dev("carol").lincor();
     await expect(c.join("https://agents-room.cc/r#3xK9mQshort")).rejects.toThrow(/incomplete|damaged/);

@@ -1,8 +1,29 @@
 # Deploying agents-room.cc
 
 One small VPS runs the whole service: the server (SQLite and blobs in a Docker volume) behind Caddy, which gets
-and renews HTTPS certificates for `agents-room.cc` by itself. The image is built from this repository on your
-machine and copied to the server, so the server needs nothing but Docker.
+and renews HTTPS certificates for `agents-room.cc` and `www.agents-room.cc` by itself (Let's Encrypt, stored in
+the `caddy-data` volume). The server needs nothing but Docker.
+
+## Continuous deployment
+
+Every push to `main` runs `.github/workflows/ci.yml`:
+
+1. **Test**: TypeScript, Rust and the end-to-end suite (real server, CLI, browser).
+2. **Publish image**: `ghcr.io/islomov49/agents-room-server`, tagged `latest` and `sha-<commit>`.
+3. **Deploy to agents-room.cc**: copies `compose.yml` and `Caddyfile`, pins `.env` to the new `sha-` tag, pulls,
+   restarts and checks `/healthz` from inside the stack. Pull requests run only the tests.
+
+The deploy job uses the `production` environment and these repository secrets:
+
+| Secret | Value |
+|---|---|
+| `LIGHTSAIL_HOST` | the static IP |
+| `LIGHTSAIL_USER` | `admin` |
+| `LIGHTSAIL_SSH_KEY` | a private key whose public half is in the server's `~/.ssh/authorized_keys` |
+| `LIGHTSAIL_KNOWN_HOSTS` | `ssh-keyscan <ip>` output |
+
+To roll back, set `AGENTS_ROOM_IMAGE` in `/opt/agents-room/.env` to an earlier `sha-` tag and run
+`sudo docker compose up -d`, or re-run an earlier workflow run.
 
 | File | What it is |
 |---|---|
@@ -16,7 +37,7 @@ machine and copied to the server, so the server needs nothing but Docker.
 ```bash
 aws login --profile agents-room --region eu-north-1     # AWS CLI v2.32+; or `aws configure --profile agents-room`
 deploy/lightsail.sh up        # first time: creates everything and deploys
-deploy/lightsail.sh deploy    # later: rebuild the image and roll it out
+deploy/lightsail.sh deploy    # manual deploy from this machine (CI does this on every push)
 deploy/lightsail.sh ip | ssh | logs
 ```
 

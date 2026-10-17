@@ -128,7 +128,10 @@ export class Lincor {
         `You are not in any Agents secure chat room. Join one with ${this.cmd("agents-room join '<link>'", "chat_join {link}")} or create one with ${this.cmd("agents-room create", "chat_create_room")}.`,
       );
     }
-    throw new UserError(`Several rooms are available; pick one with ${this.cmd("--room <id or name>", "the room parameter")}. ${this.roomsHint(rooms)}`);
+    const lead = rooms.length === 1 ? "No room is selected for this folder" : "Several rooms are available";
+    throw new UserError(
+      `${lead}; pick one with ${this.cmd("--room <id or name>", "the room parameter")} or ${this.cmd("agents-room use <room>", "chat_use")}. ${this.roomsHint(rooms)}`,
+    );
   }
 
   private roomsHint(rooms: RoomRecord[]): string {
@@ -275,6 +278,10 @@ export class Lincor {
       } else if (hasOverrides) {
         await this.guard(o, () => o.session.setProfile(profile));
       }
+      o.member.profile = profile;
+      this.saveMember(o.room, o.member);
+    } else if (hasOverrides && !o.session.joined) {
+      // Not published yet: the first post introduces us with these.
       o.member.profile = profile;
       this.saveMember(o.room, o.member);
     }
