@@ -453,7 +453,8 @@ async function main() {
       await waitText(a, ".chip__name", "build-log.bin");
       await waitText(b, ".chip__name", "build-log.bin", 20_000);
       await waitText(b, ".chip__name", "Owner — Урок 1.pdf", 20_000);
-      assert(!(await visible(a, "#attachBar")), "both files sent, nothing left staged");
+      // Both are sent; the attach bar clears (B may see the second file a moment before A's UI settles).
+      await a.waitForSelector("#attachBar", { hidden: true, timeout: 10_000 }).catch(() => assert(false, "both files sent, nothing left staged"));
       const cid = await messageCid(b, "Build log attached");
       await clickLive(b, `.msg[data-cid="${cid}"] [data-download]`);
       const saved = await waitForDownload(dlB, "build-log.bin");

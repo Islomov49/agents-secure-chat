@@ -10,6 +10,8 @@ For each setup, a real interactive `claude` runs in a pseudo-terminal in a Unity
 Setups: "zero" (nothing installed: the agent runs the CLI and must start listening in the background itself) and
 "plugin" (the Claude Code plugin: MCP tools and hooks). Usage:
   python3 -I tests/e2e/invite-listen.py [zero|plugin|both]    (needs the release server and the built CLI; uses model tokens)
+  LINCOR_E2E_URL=https://agents-room.cc python3 -I tests/e2e/invite-listen.py zero
+      against a deployed server: the agent follows that server's instructions (its published npm CLI)
 Everything lives in a temp dir; ~/.claude settings, ~/.codex and ~/.lincor are not touched.
 """
 import json
@@ -150,7 +152,12 @@ def run_setup(mode, base, tmp, clean):
 
         wake("the idle session wakes on '@unity …' by itself and replies", "@unity are you listening? Reply in the room with the single word PONG.", "PONG")
         wake("it keeps listening: a second message wakes it again", "@unity one more: reply in the room with PONG2.", "PONG2")
+        print(f"  the room as the web side sees it:\n    " + "\n    ".join(lincor("read", "--all", "--limit", "20").splitlines()[-6:]), flush=True)
     finally:
+        try:
+            lincor("delete-room", "--yes")
+        except subprocess.CalledProcessError:
+            pass
         open(f"{root}/screen.txt", "w").write(screen[0])
         try:
             os.kill(pid, signal.SIGTERM)
@@ -166,14 +173,19 @@ def main():
     which = sys.argv[1] if len(sys.argv) > 1 else "both"
     modes = ["zero", "plugin"] if which == "both" else [which]
     tmp = tempfile.mkdtemp(prefix="lincor-invite-listen-", dir=os.environ.get("LINCOR_E2E_TMP"))
-    port = free_port()
-    base = f"http://127.0.0.1:{port}"
-    server = subprocess.Popen(
-        [SERVER],
-        env={**os.environ, "LINCOR_BIND": f"127.0.0.1:{port}", "LINCOR_DATABASE_URL": f"sqlite://{tmp}/db.sqlite?mode=rwc",
-             "LINCOR_BLOB_DIR": f"{tmp}/blobs", "LINCOR_CLI_COMMAND": f"node {CLI}", "LINCOR_PUBLIC_URL": base},
-        stdout=open(f"{tmp}/server.log", "wb"), stderr=subprocess.STDOUT,
-    )
+    external = os.environ.get("LINCOR_E2E_URL", "").rstrip("/")
+    server = None
+    if external:
+        base = external
+    else:
+        port = free_port()
+        base = f"http://127.0.0.1:{port}"
+        server = subprocess.Popen(
+            [SERVER],
+            env={**os.environ, "LINCOR_BIND": f"127.0.0.1:{port}", "LINCOR_DATABASE_URL": f"sqlite://{tmp}/db.sqlite?mode=rwc",
+                 "LINCOR_BLOB_DIR": f"{tmp}/blobs", "LINCOR_CLI_COMMAND": f"node {CLI}", "LINCOR_PUBLIC_URL": base},
+            stdout=open(f"{tmp}/server.log", "wb"), stderr=subprocess.STDOUT,
+        )
     results = []
     try:
         time.sleep(1.5)
@@ -183,7 +195,8 @@ def main():
         for mode in modes:
             results += run_setup(mode, base, tmp, clean)
     finally:
-        server.terminate()
+        if server:
+            server.terminate()
     passed = sum(r["ok"] for r in results)
     expected = 3 * len(modes)
     print(f"{passed}/{expected} invite-listen checks passed; transcripts: {tmp}/<setup>/screen.txt", flush=True)
