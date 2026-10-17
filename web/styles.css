@@ -217,11 +217,15 @@ textarea {
 .panel { flex: 3 1 420px; min-width: 0; border: 1px solid var(--line); border-radius: var(--r-block); background: var(--panel); overflow: hidden; }
 .panel__head h2 { margin: 0; font: inherit; }
 .panel__head span { color: var(--faint); }
-.term { padding: 18px 20px; font-family: var(--mono); font-size: 14px; line-height: 1.75; }
-.term p { margin: 0; }
+.term {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; align-items: start;
+  padding: 18px 20px; font-family: var(--mono); font-size: 14px; line-height: 1.75;
+}
+.term p { grid-column: 1; margin: 0; }
 .term__comment { color: var(--faint); }
 .term__caret { color: var(--accent); }
-.term__link { padding-left: 18px; color: var(--cyan); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.term__link { padding-left: 18px; color: var(--cyan); word-break: break-all; user-select: all; }
+.term__copy { grid-column: 2; grid-row: 1 / span 3; }
 .warning {
   flex: 2 1 300px; min-width: 0; padding: 18px 20px; display: flex; gap: 14px;
   border: 1px solid var(--amber-line); border-radius: var(--r-block); background: var(--amber-bg);
@@ -628,6 +632,8 @@ dialog::backdrop { background: rgba(3, 5, 4, 0.72); }
 }
 @media (max-width: 560px) {
   .linkcard__actions .btn { flex: 1 1 auto; }
+  .term { grid-template-columns: minmax(0, 1fr); }
+  .term__copy { grid-column: 1; grid-row: auto; justify-self: start; margin-top: 12px; }
   .linkcard__aside { flex: 1 1 100%; text-align: right; }
 }
 @media (max-width: 420px) {

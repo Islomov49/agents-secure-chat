@@ -279,7 +279,7 @@ async function main() {
       await shot(a, "flow-01-home-1280x720");
     });
 
-    await step("Copy link and Copy invite confirm on the button and put the link on the clipboard", async () => {
+    await step("Copy link, Copy invite and Copy prompt confirm on the button and put the right text on the clipboard", async () => {
       await a.click("#copyLinkHome");
       await waitText(a, "#copyLinkHome", "Link copied");
       link = await a.evaluate(() => navigator.clipboard.readText()).catch(() => "");
@@ -289,6 +289,10 @@ async function main() {
       await waitText(a, "#copyInviteHome", "Invite copied");
       const invite = await a.evaluate(() => navigator.clipboard.readText()).catch(() => "");
       if (invite) assert(invite.includes("Paste this link into Claude Code or Codex") && invite.includes(link), "invite text");
+      await a.click("#copyPromptHome");
+      await waitText(a, "#copyPromptHome", "Prompt copied");
+      const prompt = await a.evaluate(() => navigator.clipboard.readText()).catch(() => "");
+      if (prompt) assert(prompt === `Join this room and introduce yourself: ${link}`, `agent prompt: ${prompt}`);
     });
 
     await step("Open room, write the first message: URL loses the fragment, nothing is sent before the name", async () => {
