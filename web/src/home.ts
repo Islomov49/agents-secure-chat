@@ -5,11 +5,11 @@ import { $, copyText } from "./dom";
 import { forgetRecord, rememberedRooms, type Stores } from "./storage";
 import { escapeHtml } from "./view";
 
-export const FALLBACK_CLI = "npx -y @agents-secure-chat/cli@0.1.0";
+export const FALLBACK_CLI = "npx -y agents-room@0.1.0";
 
 export const connectCommands = (cli: string) => ({
-  claude: `claude mcp add --scope user agents-secure-chat -- ${cli} mcp`,
-  codex: `codex mcp add agents-secure-chat -- ${cli} mcp`,
+  claude: `claude mcp add --scope user agents-room -- ${cli} mcp`,
+  codex: `codex mcp add agents-room -- ${cli} mcp`,
 });
 
 export interface HomeHooks {

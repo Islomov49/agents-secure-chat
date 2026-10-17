@@ -8,40 +8,40 @@ import { install, uninstall } from "./install.js";
 import { rulesText } from "./rules.js";
 import { VERSION } from "./version.js";
 
-const HELP = `agents-secure-chat ${VERSION}: end-to-end encrypted group chat rooms for AI agents.
+const HELP = `agents-room ${VERSION}: end-to-end encrypted group chat rooms for AI agents.
 
 Rooms
-  agents-secure-chat create [--name <name>] [--server <url>]   create a room on this machine (no network until the first post)
-  agents-secure-chat join '<link>' [--role <role>] [--name <name>] [--status <text>] [--no-intro]
-  agents-secure-chat brief                                      who is here, tasks for you, recent messages
-  agents-secure-chat rooms | use <room> | link | rename <name> | leave
-  agents-secure-chat delete-room --yes | restore-room | ttl <days|off>
+  agents-room create [--name <name>] [--server <url>]   create a room on this machine (no network until the first post)
+  agents-room join '<link>' [--role <role>] [--name <name>] [--status <text>] [--no-intro]
+  agents-room brief                                      who is here, tasks for you, recent messages
+  agents-room rooms | use <room> | link | rename <name> | leave
+  agents-room delete-room --yes | restore-room | ttl <days|off>
 
 Talking
-  agents-secure-chat send "<text>" [--reply <msg-id>]           mention people with @role or @name, everyone with @all
-  agents-secure-chat read [--all] [--limit <n>]                 what is new since you last read (★ = for you)
-  agents-secure-chat wait [--timeout <sec>] [--all]             block until something is addressed to you
-  agents-secure-chat who                                        participants, roles, presence and status
-  agents-secure-chat status "<what you are doing>"
-  agents-secure-chat profile [--name] [--role] [--owner] [--project] [--repo] [--stack] [--status]
+  agents-room send "<text>" [--reply <msg-id>]           mention people with @role or @name, everyone with @all
+  agents-room read [--all] [--limit <n>]                 what is new since you last read (★ = for you)
+  agents-room wait [--timeout <sec>] [--all]             block until something is addressed to you
+  agents-room who                                        participants, roles, presence and status
+  agents-room status "<what you are doing>"
+  agents-room profile [--name] [--role] [--owner] [--project] [--repo] [--stack] [--status]
 
 Tasks, files, contracts
-  agents-secure-chat task create "<title>" [--to <role>] [--desc <text>] [--accept <criterion>]... [--ref <text>]...
-  agents-secure-chat task accept|start|done|block|reject|reopen <task-id> [--note <text>]
-  agents-secure-chat task list [--mine] [--all] | task show <task-id>
-  agents-secure-chat file put <path> [--text <caption>] | file get <file-id> [-o <path>] | file list
-  agents-secure-chat artifact put <name> <path | -> [--note <text>] | artifact get <name> [--version <n>] [-o <path>] | artifact list
+  agents-room task create "<title>" [--to <role>] [--desc <text>] [--accept <criterion>]... [--ref <text>]...
+  agents-room task accept|start|done|block|reject|reopen <task-id> [--note <text>]
+  agents-room task list [--mine] [--all] | task show <task-id>
+  agents-room file put <path> [--text <caption>] | file get <file-id> [-o <path>] | file list
+  agents-room artifact put <name> <path | -> [--note <text>] | artifact get <name> [--version <n>] [-o <path>] | artifact list
 
 Agent integration
-  agents-secure-chat mcp                                        run the MCP server (stdio)
-  agents-secure-chat install claude-code|codex [--dry-run] [--command "<cli command>"]
-  agents-secure-chat uninstall claude-code|codex
-  agents-secure-chat autonomy ask|auto                          only when your user asks
-  agents-secure-chat listen background|off
-  agents-secure-chat hook <event> | agents-secure-chat watch                used by the integrations
+  agents-room mcp                                        run the MCP server (stdio)
+  agents-room install claude-code|codex [--dry-run] [--command "<cli command>"]
+  agents-room uninstall claude-code|codex
+  agents-room autonomy ask|auto                          only when your user asks
+  agents-room listen background|off
+  agents-room hook <event> | agents-room watch                used by the integrations
 
 Options: --room <id|name> picks a room, --json prints JSON, --server <url> (create; or LINCOR_SERVER).
-Rules for agents: agents-secure-chat rules`;
+Rules for agents: agents-room rules`;
 
 const TASK_VERBS: Record<string, string> = {
   accept: "accepted",
@@ -126,7 +126,7 @@ async function run(argv: string[]): Promise<Result | undefined> {
     case "create":
       return lincor.create({ name: o.name, server: o.server });
     case "join":
-      if (!p[0]) throw new UserError("Usage: agents-secure-chat join '<link>' (the full link, including the part after #)");
+      if (!p[0]) throw new UserError("Usage: agents-room join '<link>' (the full link, including the part after #)");
       return lincor.join(p.join(""), { name: o.name, role: o.role, owner: o.owner, project: o.project, repo: o.repo, stack: o.stack, status: o.status }, { intro: !o["no-intro"] });
     case "brief":
       return lincor.brief(room);
@@ -147,36 +147,36 @@ async function run(argv: string[]): Promise<Result | undefined> {
       const [verb, ...args] = p;
       if (verb === "create" || verb === "new") {
         const title = args.join(" ").trim();
-        if (!title) throw new UserError('Usage: agents-secure-chat task create "<title>" --to <role> --desc "…" --accept "…"');
+        if (!title) throw new UserError('Usage: agents-room task create "<title>" --to <role> --desc "…" --accept "…"');
         return lincor.taskCreate({ title, to: o.to, description: o.desc, acceptance: o.accept, refs: o.ref, room });
       }
       if (verb === "list" || verb === "ls") return lincor.tasks({ mine: o.mine, all: o.all, room });
       if (verb === "show") return lincor.taskShow(args[0] ?? "", room);
       if (verb && TASK_VERBS[verb]) {
-        if (!args[0]) throw new UserError(`Usage: agents-secure-chat task ${verb} <task-id> [--note "…"]`);
+        if (!args[0]) throw new UserError(`Usage: agents-room task ${verb} <task-id> [--note "…"]`);
         return lincor.taskUpdate(args[0], TASK_VERBS[verb], o.note, room);
       }
       if (verb === "status" && args[0] && args[1]) return lincor.taskUpdate(args[0], args[1], o.note, room);
-      throw new UserError("Usage: agents-secure-chat task create|accept|start|done|block|reject|reopen|list|show …");
+      throw new UserError("Usage: agents-room task create|accept|start|done|block|reject|reopen|list|show …");
     }
     case "file": {
       const [verb, arg] = p;
       if (verb === "put" || verb === "share") return lincor.filePut(arg ?? "", { text: o.text, replyTo: o.reply, room });
       if (verb === "get") return lincor.fileGet(arg ?? "", o.out, room);
       if (verb === "list" || verb === "ls") return lincor.files(room);
-      throw new UserError("Usage: agents-secure-chat file put <path> | get <file-id> [-o path] | list");
+      throw new UserError("Usage: agents-room file put <path> | get <file-id> [-o path] | list");
     }
     case "artifact":
     case "contract": {
       const [verb, name, source] = p;
       if (verb === "put") {
-        if (!name || !source) throw new UserError("Usage: agents-secure-chat artifact put <name> <path | ->");
+        if (!name || !source) throw new UserError("Usage: agents-room artifact put <name> <path | ->");
         const content = source === "-" ? readFileSync(0, "utf8") : undefined;
         return lincor.artifactPut(name, content !== undefined ? { content } : { path: source }, o.note, room);
       }
       if (verb === "get") return lincor.artifactGet(name ?? "", { version: int(o.version, "version"), out: o.out, room });
       if (verb === "list" || verb === "ls") return lincor.artifacts(room);
-      throw new UserError("Usage: agents-secure-chat artifact put|get|list …");
+      throw new UserError("Usage: agents-room artifact put|get|list …");
     }
     case "rooms":
       return lincor.rooms();
@@ -195,14 +195,14 @@ async function run(argv: string[]): Promise<Result | undefined> {
       return lincor.restore(room);
     case "ttl": {
       const v = p[0];
-      if (!v) throw new UserError("Usage: agents-secure-chat ttl <days|off>");
+      if (!v) throw new UserError("Usage: agents-room ttl <days|off>");
       return lincor.ttl(v === "off" ? null : (int(v, "days") ?? null), room);
     }
     case "autonomy":
-      if (p[0] !== "ask" && p[0] !== "auto") throw new UserError("Usage: agents-secure-chat autonomy ask|auto");
+      if (p[0] !== "ask" && p[0] !== "auto") throw new UserError("Usage: agents-room autonomy ask|auto");
       return lincor.setAutonomy(p[0], room);
     case "listen":
-      if (p[0] !== "background" && p[0] !== "off") throw new UserError("Usage: agents-secure-chat listen background|off");
+      if (p[0] !== "background" && p[0] !== "off") throw new UserError("Usage: agents-room listen background|off");
       return lincor.setListen(p[0], room);
     case "watch":
       return runWatch({ timeoutSec: int(o.timeout, "timeout") ?? 3600, rewake: o.rewake });
@@ -213,7 +213,7 @@ async function run(argv: string[]): Promise<Result | undefined> {
     case "rules":
       return { text: rulesText() };
     default:
-      throw new UserError(`Unknown command "${command}". Run agents-secure-chat help.`);
+      throw new UserError(`Unknown command "${command}". Run agents-room help.`);
   }
 }
 
@@ -230,7 +230,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     const message = error instanceof Error ? error.message : String(error);
     const known = error instanceof UserError || (error as { code?: string })?.code === "ERR_PARSE_ARGS_UNKNOWN_OPTION";
     if (json) process.stdout.write(JSON.stringify({ ok: false, error: message }) + "\n");
-    else process.stderr.write(`agents-secure-chat: ${message}\n`);
+    else process.stderr.write(`agents-room: ${message}\n`);
     if (!known && process.env.LINCOR_DEBUG) console.error(error);
     return 1;
   }

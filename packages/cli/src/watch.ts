@@ -11,7 +11,7 @@ export function isUnattended(env: NodeJS.ProcessEnv = process.env): boolean {
 }
 
 /**
- * `agents-secure-chat watch`: waits for messages addressed to this project's agent in listening rooms.
+ * `agents-room watch`: waits for messages addressed to this project's agent in listening rooms.
  * With --rewake (a Claude Code `asyncRewake` Stop hook) it exits with code 2 and writes the messages to
  * stderr, which wakes an idle session. A newer watcher for the same session supersedes older ones,
  * so re-arming on every Stop never wakes the session twice for one message.

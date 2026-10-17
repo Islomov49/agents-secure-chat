@@ -9,7 +9,7 @@
     "web"
   ],
   "scripts": {
-    "build": "npm run build -w @lincor/core && npm run build -w @agents-secure-chat/cli && npm run build -w @lincor/web",
-    "test": "npm test -w @lincor/core && npm test -w @agents-secure-chat/cli && npm test -w @lincor/web"
+    "build": "npm run build -w @lincor/core && npm run build -w agents-room && npm run build -w @lincor/web",
+    "test": "npm test -w @lincor/core && npm test -w agents-room && npm test -w @lincor/web"
   }
 }

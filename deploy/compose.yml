@@ -1,0 +1,34 @@
+# Production stack on one VM: the server (SQLite + local blobs in a volume) behind Caddy.
+# CI publishes the image to ghcr.io and writes AGENTS_ROOM_IMAGE to .env; manual deploys load a local build.
+services:
+  app:
+    image: ${AGENTS_ROOM_IMAGE:-ghcr.io/islomov49/agents-room-server:latest}
+    restart: unless-stopped
+    environment:
+      LINCOR_PUBLIC_URL: https://agents-room.cc
+      LINCOR_TRUST_PROXY: "1"
+      LINCOR_DATABASE_URL: sqlite:///data/lincor.db?mode=rwc
+      LINCOR_BLOB_DIR: /data/blobs
+    volumes:
+      - app-data:/data
+    expose:
+      - "8080"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+
+volumes:
+  app-data:
+  caddy-data:
+  caddy-config:

@@ -6,3 +6,4 @@ server/target
 .lincor-test/
 server/data/
 *.tgz
+deploy/localcheck/

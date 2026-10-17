@@ -3,7 +3,7 @@ import { deriveKey, randomBytes, sha256, signingKeyFromSeed, type SigningKey } f
 import { b64u, concat, equalBytes, utf8 } from "./encoding.js";
 
 export const KEY_VERSION = 0x01;
-export const DEFAULT_ORIGIN = "https://lincor.dev";
+export const DEFAULT_ORIGIN = "https://agents-room.cc";
 
 export interface RoomKeys {
   /** The 32-byte secret from the link. Never leaves the participant's device. */

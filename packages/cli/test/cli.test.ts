@@ -12,7 +12,7 @@ import { editHooks, removeTomlSection } from "../src/install.js";
 import { claudePluginFiles, codexMcpToml } from "../src/templates.js";
 import { RoomSession, b64u, decodeKey, deriveRoom, newIdentity, parseLink, sealEvent, type Profile } from "@lincor/core";
 
-const BUNDLE = new URL("../dist/agents-secure-chat.js", import.meta.url).pathname;
+const BUNDLE = new URL("../dist/agents-room.js", import.meta.url).pathname;
 let server: MockServer;
 let root: string;
 
@@ -129,8 +129,8 @@ describe("lincor service", () => {
 
   it("explains damaged links instead of failing obscurely", async () => {
     const c = dev("carol").lincor();
-    await expect(c.join("https://lincor.dev/r#3xK9mQshort")).rejects.toThrow(/incomplete|damaged/);
-    await expect(c.join("https://lincor.dev/r")).rejects.toThrow(/after #/);
+    await expect(c.join("https://agents-room.cc/r#3xK9mQshort")).rejects.toThrow(/incomplete|damaged/);
+    await expect(c.join("https://agents-room.cc/r")).rejects.toThrow(/after #/);
   });
 
   it("keeps separate identities per project directory on one machine", async () => {
@@ -151,7 +151,7 @@ describe("lincor service", () => {
 describe("CLI binary", () => {
   it("prints help, version and friendly errors", async () => {
     const d = dev("dana");
-    expect((await d.cli(["help"])).out).toContain("agents-secure-chat join");
+    expect((await d.cli(["help"])).out).toContain("agents-room join");
     expect((await d.cli(["version"])).out.trim()).toMatch(/^\d+\.\d+\.\d+$/);
     const r = await d.cli(["send", "hi"]);
     expect(r.code).toBe(1);
@@ -302,9 +302,9 @@ describe("integration files", () => {
     const hooks = JSON.parse(files["hooks/hooks.json"]).hooks;
     expect(Object.keys(hooks)).toEqual(["SessionStart", "UserPromptSubmit", "PostToolUse", "Stop"]);
     expect(hooks.Stop[0].hooks[1]).toMatchObject({ asyncRewake: true, command: "node /opt/lincor.js watch --rewake --timeout 3600" });
-    expect(JSON.parse(files[".mcp.json"]).mcpServers["agents-secure-chat"]).toEqual({ command: "node", args: ["/opt/lincor.js", "mcp"] });
-    expect(files["skills/agents-secure-chat/SKILL.md"]).toMatch(/^---\nname: agents-secure-chat\ndescription: /);
-    expect(codexMcpToml({ command: "npx", args: ["-y", "@agents-secure-chat/cli@0.1.0"] })).toContain('args = ["-y", "@agents-secure-chat/cli@0.1.0", "mcp"]\ntool_timeout_sec = 660');
+    expect(JSON.parse(files[".mcp.json"]).mcpServers["agents-room"]).toEqual({ command: "node", args: ["/opt/lincor.js", "mcp"] });
+    expect(files["skills/agents-room/SKILL.md"]).toMatch(/^---\nname: agents-room\ndescription: /);
+    expect(codexMcpToml({ command: "npx", args: ["-y", "agents-room@0.1.0"] })).toContain('args = ["-y", "agents-room@0.1.0", "mcp"]\ntool_timeout_sec = 660');
   });
 
   it("installs into Codex config without clobbering other settings, and uninstalls", () => {
@@ -320,21 +320,21 @@ describe("integration files", () => {
     const toml = readFileSync(join(codexHome, "config.toml"), "utf8");
     expect(toml).toContain('model = "gpt-5"');
     expect(toml).toContain("[mcp_servers.other]");
-    expect(toml.match(/\[mcp_servers\.agents-secure-chat\]/g)).toHaveLength(1);
+    expect(toml.match(/\[mcp_servers\.agents-room\]/g)).toHaveLength(1);
     const hooks = JSON.parse(readFileSync(join(codexHome, "hooks.json"), "utf8")).hooks;
     expect(hooks.Stop).toHaveLength(2);
     expect(hooks.Stop[0].hooks[0].command).toBe("say done");
-    expect(existsSync(join(codexHome, "skills", "agents-secure-chat", "SKILL.md"))).toBe(true);
+    expect(existsSync(join(codexHome, "skills", "agents-room", "SKILL.md"))).toBe(true);
     run(["uninstall", "codex"]);
-    expect(readFileSync(join(codexHome, "config.toml"), "utf8")).not.toContain("mcp_servers.agents-secure-chat");
+    expect(readFileSync(join(codexHome, "config.toml"), "utf8")).not.toContain("mcp_servers.agents-room");
     expect(JSON.parse(readFileSync(join(codexHome, "hooks.json"), "utf8")).hooks.Stop).toHaveLength(1);
   });
 
   it("edits TOML sections and hooks.json precisely", () => {
     const dir = mkdtempSync(join(tmpdir(), "lincor-edit-"));
     const toml = join(dir, "c.toml");
-    writeFileSync(toml, '[a]\nx=1\n[mcp_servers.agents-secure-chat]\ncommand="n"\n[mcp_servers.agents-secure-chat.tools.wait]\napproval_mode="approve"\n[b]\ny=2\n');
-    removeTomlSection(toml, "mcp_servers.agents-secure-chat");
+    writeFileSync(toml, '[a]\nx=1\n[mcp_servers.agents-room]\ncommand="n"\n[mcp_servers.agents-room.tools.wait]\napproval_mode="approve"\n[b]\ny=2\n');
+    removeTomlSection(toml, "mcp_servers.agents-room");
     expect(readFileSync(toml, "utf8")).toBe("[a]\nx=1\n[b]\ny=2\n");
     const hooks = join(dir, "hooks.json");
     editHooks(hooks, () => ({ Stop: [{ hooks: [{ type: "command", command: "lincor hook stop" }] }] }));

@@ -1,6 +1,6 @@
 ---
-name: agents-secure-chat
-description: Use when the user shares an Agents secure chat room link (https://…/r#…), asks to hand work to another session, another computer or a colleague's agent, or asks to talk to or listen to other agents in a agents-secure-chat room.
+name: agents-room
+description: Use when the user shares an Agents secure chat room link (https://…/r#…), asks to hand work to another session, another computer or a colleague's agent, or asks to talk to or listen to other agents in a agents-room room.
 ---
 
 # Agents secure chat: rooms where your team's AI agents work together

@@ -511,7 +511,7 @@ async function roomShapeBytes(secret) {
   return sha256(concat(label, await sha256(concat(new TextEncoder().encode("lincor/v1/auth"), secret))));
 }
 function linkFor(key) {
-  const base = location.protocol.startsWith("http") ? location.origin : "https://lincor.dev";
+  const base = location.protocol.startsWith("http") ? location.origin : "https://agents-room.cc";
   return `${base}/r#${key}`;
 }
 function inviteFor(key) {

@@ -15,11 +15,11 @@ const write = (path: string, content: string) => {
   console.log("wrote", path);
 };
 
-for (const [path, content] of Object.entries(claudePluginFiles(launch))) write(`integrations/claude-code/agents-secure-chat/${path}`, content);
+for (const [path, content] of Object.entries(claudePluginFiles(launch))) write(`integrations/claude-code/agents-room/${path}`, content);
 write(
   ".claude-plugin/marketplace.json",
-  claudeMarketplace().replace('"./agents-secure-chat"', '"./integrations/claude-code/agents-secure-chat"'),
+  claudeMarketplace().replace('"./agents-room"', '"./integrations/claude-code/agents-room"'),
 );
 write("integrations/codex/config.toml", codexMcpToml(launch));
 write("integrations/codex/hooks.json", JSON.stringify({ hooks: codexHooks(launch) }, null, 2));
-write("integrations/codex/skills/agents-secure-chat/SKILL.md", skillMarkdown());
+write("integrations/codex/skills/agents-room/SKILL.md", skillMarkdown());

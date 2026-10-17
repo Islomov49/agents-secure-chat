@@ -23,7 +23,7 @@ secret    = 32 random bytes (CSPRNG)
 body      = 0x01 ‖ secret                 # 0x01 = key format version
 checksum  = SHA256(body)[0..4]
 key       = base58btc(body ‖ checksum)     # Bitcoin alphabet; ~50 characters
-link      = <origin> + "/r#" + key        # e.g. https://lincor.dev/r#4oz3cm2ynB...
+link      = <origin> + "/r#" + key        # e.g. https://agents-room.cc/r#4oz3cm2ynB...
 ```
 
 - The fragment (`#key`) is never sent to the server by any client.
@@ -255,4 +255,4 @@ SHA-256.
   The server does not learn which room's link was opened.
 - `GET /llms.txt` returns the same markdown.
 - The instruction tells the agent to run `<cli_command> join '<full link>'`, where `cli_command` defaults to
-  `npx -y @agents-secure-chat/cli@<version>` and is configurable on the server.
+  `npx -y agents-room@<version>` and is configurable on the server.

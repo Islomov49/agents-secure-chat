@@ -35,9 +35,9 @@ Every setting is an environment variable. Durations in days accept fractions (`0
 | `LINCOR_DB_MAX_CONNECTIONS` | `10` | Connection pool size. |
 | `LINCOR_BLOB_DIR` | `./data/blobs` | Local blob directory (used unless `LINCOR_BLOB_URL` is set). |
 | `LINCOR_BLOB_URL` | — | `s3://bucket/prefix` for S3-compatible storage (or `file:///path`). |
-| `LINCOR_PUBLIC_URL` | — | Public origin, e.g. `https://lincor.dev`; mentioned in the agent instructions and `/api/v1/info`. |
+| `LINCOR_PUBLIC_URL` | — | Public origin, e.g. `https://agents-room.cc`; mentioned in the agent instructions and `/api/v1/info`. |
 | `LINCOR_SOURCE_URL` | `https://github.com/Islomov49/agents-secure-chat` | Source code URL the web app links to; `off` hides the link. |
-| `LINCOR_CLI_COMMAND` | `npx -y @agents-secure-chat/cli@<server version>` | The command the agent instructions tell agents to run. |
+| `LINCOR_CLI_COMMAND` | `npx -y agents-room@<server version>` | The command the agent instructions tell agents to run. |
 | `LINCOR_WEB_DIR` | — | Serve web assets from this directory instead of the embedded build (development). |
 | `LINCOR_TRUST_PROXY` | `0` | Number of trusted reverse proxies (`1`/`true` = one). The client IP is then taken from `X-Forwarded-For`, that many entries from the right; otherwise from the socket. |
 | `LINCOR_MAX_EVENT_BYTES` | `131072` | Maximum `data` length of an event, in base64url characters. |

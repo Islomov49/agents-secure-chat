@@ -611,7 +611,7 @@ async fn info_reports_version_and_limits() {
     assert_eq!(res.status(), StatusCode::OK);
     let (_, info) = json_of(res).await;
     assert_eq!(info["version"], env!("CARGO_PKG_VERSION"));
-    assert_eq!(info["cli_command"], format!("npx -y @agents-secure-chat/cli@{}", env!("CARGO_PKG_VERSION")));
+    assert_eq!(info["cli_command"], format!("npx -y agents-room@{}", env!("CARGO_PKG_VERSION")));
     let limits = &info["limits"];
     assert_eq!(limits["max_senders"], 7);
     assert_eq!(limits["max_event_bytes"], 131_072);

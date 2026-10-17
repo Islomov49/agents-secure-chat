@@ -21,7 +21,7 @@ import { createServer } from "node:net";
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const args = new Set(process.argv.slice(2));
 const tmp = mkdtempSync(join(process.env.LINCOR_E2E_TMP ?? tmpdir(), "lincor-e2e-"));
-const CLI = join(repo, "packages/cli/dist/agents-secure-chat.js");
+const CLI = join(repo, "packages/cli/dist/agents-room.js");
 const results = [];
 let serverProcess;
 let pgContainer;
@@ -98,7 +98,7 @@ async function main() {
     log("building core, web, cli, server…");
     sh("npm", ["run", "build", "-w", "@lincor/core"]);
     sh("npm", ["run", "build", "-w", "@lincor/web"]);
-    sh("npm", ["run", "build", "-w", "@agents-secure-chat/cli"]);
+    sh("npm", ["run", "build", "-w", "agents-room"]);
     sh("cargo", ["build", "--release"], { cwd: join(repo, "server") });
   }
   const binary = join(repo, "server/target/release/lincor-server");
@@ -388,7 +388,7 @@ async function liveAgents(base) {
   await check("Claude Code with the plugin: MCP join → task done", async () => {
     const r = await agentRun(
       "claude",
-      ["-p", `${created2.data.link}\n\nJoin my team's Agents secure chat room and do the task assigned to your role; you have my OK.`, "--plugin-dir", join(pluginRoot, "agents-secure-chat"), "--allowedTools", "mcp__plugin_agents-secure-chat_agents-secure-chat__*", "Write", "Read", "--permission-mode", "dontAsk", "--max-turns", "40"],
+      ["-p", `${created2.data.link}\n\nJoin my team's Agents secure chat room and do the task assigned to your role; you have my OK.`, "--plugin-dir", join(pluginRoot, "agents-room"), "--allowedTools", "mcp__plugin_agents-room_agents-room__*", "Write", "Read", "--permission-mode", "dontAsk", "--max-turns", "40"],
       c.project,
       { ...c.env, LINCOR_CLIENT: "" },
     );
@@ -412,11 +412,11 @@ async function liveAgents(base) {
       [
         "exec", "--skip-git-repo-check", "--ephemeral", "-C", x.project, "-s", "danger-full-access",
         ...(process.env.LINCOR_E2E_CODEX_MODEL ? ["-m", process.env.LINCOR_E2E_CODEX_MODEL] : []),
-        "-c", 'mcp_servers.agents-secure-chat.command="node"',
-        "-c", `mcp_servers.agents-secure-chat.args=["${CLI}","mcp"]`,
-        "-c", "mcp_servers.agents-secure-chat.tool_timeout_sec=660",
-        "-c", 'mcp_servers.agents-secure-chat.default_tools_approval_mode="approve"',
-        "-c", `mcp_servers.agents-secure-chat.env={LINCOR_HOME="${x.env.LINCOR_HOME}",LINCOR_OWNER="codex",LINCOR_PROJECT_DIR="${x.project}"}`,
+        "-c", 'mcp_servers.agents-room.command="node"',
+        "-c", `mcp_servers.agents-room.args=["${CLI}","mcp"]`,
+        "-c", "mcp_servers.agents-room.tool_timeout_sec=660",
+        "-c", 'mcp_servers.agents-room.default_tools_approval_mode="approve"',
+        "-c", `mcp_servers.agents-room.env={LINCOR_HOME="${x.env.LINCOR_HOME}",LINCOR_OWNER="codex",LINCOR_PROJECT_DIR="${x.project}"}`,
         `${created3.data.link}\n\nJoin my team's Agents secure chat room with its MCP tools and do the task assigned to your role; you have my OK.`,
       ],
       x.project,

@@ -4,11 +4,11 @@ import { VERSION } from "./version.js";
 /** Files of the Claude Code plugin and the Codex integration, generated from one source. */
 
 export const SKILL_DESCRIPTION =
-  "Use when the user shares an Agents secure chat room link (https://…/r#…), asks to hand work to another session, another computer or a colleague's agent, or asks to talk to or listen to other agents in a agents-secure-chat room.";
+  "Use when the user shares an Agents secure chat room link (https://…/r#…), asks to hand work to another session, another computer or a colleague's agent, or asks to talk to or listen to other agents in a agents-room room.";
 
 export function skillMarkdown(): string {
   return `---
-name: agents-secure-chat
+name: agents-room
 description: ${SKILL_DESCRIPTION}
 ---
 
@@ -57,18 +57,18 @@ export function claudePluginFiles(launch: Launch): Record<string, string> {
   return {
     ".claude-plugin/plugin.json": JSON.stringify(
       {
-        name: "agents-secure-chat",
+        name: "agents-room",
         version: VERSION,
         description: "Encrypted group chat rooms for your team's AI agents: join by link, hand off tasks, share contracts, listen for messages.",
-        author: { name: "agents-secure-chat" },
-        homepage: "https://lincor.dev",
+        author: { name: "agents-room" },
+        homepage: "https://agents-room.cc",
         license: "MIT",
         keywords: ["agents", "collaboration", "e2e", "mcp"],
       },
       null,
       2,
     ),
-    ".mcp.json": JSON.stringify({ mcpServers: { "agents-secure-chat": { command: launch.command, args: [...launch.args, "mcp"] } } }, null, 2),
+    ".mcp.json": JSON.stringify({ mcpServers: { "agents-room": { command: launch.command, args: [...launch.args, "mcp"] } } }, null, 2),
     "hooks/hooks.json": JSON.stringify(
       {
         hooks: {
@@ -88,17 +88,17 @@ export function claudePluginFiles(launch: Launch): Record<string, string> {
       null,
       2,
     ),
-    "skills/agents-secure-chat/SKILL.md": skillMarkdown(),
+    "skills/agents-room/SKILL.md": skillMarkdown(),
   };
 }
 
 export const claudeMarketplace = (): string =>
   JSON.stringify(
     {
-      name: "agents-secure-chat",
-      owner: { name: "agents-secure-chat" },
+      name: "agents-room",
+      owner: { name: "agents-room" },
       description: "Agents secure chat: end-to-end encrypted group chat rooms for your team's AI agents.",
-      plugins: [{ name: "agents-secure-chat", source: "./agents-secure-chat", description: "Encrypted group chat rooms for your team's AI agents." }],
+      plugins: [{ name: "agents-room", source: "./agents-room", description: "Encrypted group chat rooms for your team's AI agents." }],
     },
     null,
     2,
@@ -115,7 +115,7 @@ export function codexHooks(launch: Launch): Record<string, unknown> {
 
 export function codexMcpToml(launch: Launch): string {
   const q = (s: string) => JSON.stringify(s);
-  return `[mcp_servers.agents-secure-chat]
+  return `[mcp_servers.agents-room]
 command = ${q(launch.command)}
 args = [${[...launch.args, "mcp"].map(q).join(", ")}]
 tool_timeout_sec = 660

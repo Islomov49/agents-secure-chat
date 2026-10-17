@@ -118,7 +118,7 @@ impl Default for Config {
 }
 
 pub fn default_cli_command() -> String {
-    format!("npx -y @agents-secure-chat/cli@{VERSION}")
+    format!("npx -y agents-room@{VERSION}")
 }
 
 impl Config {
@@ -236,7 +236,7 @@ mod tests {
     fn defaults() {
         let c = from(&[]).unwrap();
         assert_eq!(c.bind.to_string(), "0.0.0.0:8080");
-        assert_eq!(c.cli_command, format!("npx -y @agents-secure-chat/cli@{VERSION}"));
+        assert_eq!(c.cli_command, format!("npx -y agents-room@{VERSION}"));
         assert_eq!(c.limits.max_event_bytes, 131_072);
         assert_eq!(c.retention.delete_grace, Duration::from_secs(86_400));
         assert_eq!(c.trust_proxy_hops, 0);
@@ -250,11 +250,11 @@ mod tests {
             ("LINCOR_EMPTY_ROOM_DAYS", "0.5"),
             ("LINCOR_DELETE_GRACE_SECS", "2"),
             ("LINCOR_TRUST_PROXY", "1"),
-            ("LINCOR_PUBLIC_URL", "https://lincor.dev/"),
-            ("LINCOR_SOURCE_URL", "https://github.com/example/agents-secure-chat"),
+            ("LINCOR_PUBLIC_URL", "https://agents-room.cc/"),
+            ("LINCOR_SOURCE_URL", "https://github.com/example/agents-room"),
         ])
         .unwrap();
-        assert_eq!(c.source_url.as_deref(), Some("https://github.com/example/agents-secure-chat"));
+        assert_eq!(c.source_url.as_deref(), Some("https://github.com/example/agents-room"));
         assert_eq!(from(&[("LINCOR_SOURCE_URL", "javascript:alert(1)")]).unwrap().source_url, None);
         assert_eq!(from(&[("LINCOR_SOURCE_URL", "off")]).unwrap().source_url, None);
         assert_eq!(from(&[]).unwrap().source_url.as_deref(), Some(DEFAULT_SOURCE_URL));
@@ -263,7 +263,7 @@ mod tests {
         assert_eq!(c.retention.empty_room_after, Duration::from_secs(43_200));
         assert_eq!(c.retention.delete_grace, Duration::from_secs(2));
         assert_eq!(c.trust_proxy_hops, 1);
-        assert_eq!(c.public_url.as_deref(), Some("https://lincor.dev"));
+        assert_eq!(c.public_url.as_deref(), Some("https://agents-room.cc"));
         assert!(from(&[("LINCOR_MAX_SENDERS", "many")]).is_err());
         assert!(from(&[("LINCOR_INACTIVE_DAYS", "-1")]).is_err());
     }

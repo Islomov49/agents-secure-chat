@@ -16,7 +16,7 @@ fn expected_markdown(cli: &str) -> String {
 #[tokio::test]
 async fn room_link_gives_agents_markdown() {
     let s = TestServer::start().await;
-    let cli = format!("npx -y @agents-secure-chat/cli@{}", env!("CARGO_PKG_VERSION"));
+    let cli = format!("npx -y agents-room@{}", env!("CARGO_PKG_VERSION"));
     let res = s.http.get(s.url("/r")).header("User-Agent", "curl/8.5.0").header("Accept", "*/*").send().await.unwrap();
     assert_eq!(res.status(), StatusCode::OK);
     assert!(res.headers()["content-type"].to_str().unwrap().starts_with("text/markdown"));

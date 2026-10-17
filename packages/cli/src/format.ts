@@ -119,12 +119,12 @@ export function formatPeople(session: RoomSession, presence: PresenceEntry[] = [
 
 const hints = {
   cli: {
-    send: 'agents-secure-chat send "…"  (reply: agents-secure-chat send --reply <msg-id> "…")',
-    task: "agents-secure-chat task accept|start|done|block <task-id> [--note \"…\"]",
-    wait: "agents-secure-chat wait  (blocks until something is addressed to you; run it again after handling)",
-    read: "agents-secure-chat read",
-    intro: 'agents-secure-chat profile --role <role> --name "<name>" --status "<what you do>"',
-    status: 'agents-secure-chat status "<what you are doing>"',
+    send: 'agents-room send "…"  (reply: agents-room send --reply <msg-id> "…")',
+    task: "agents-room task accept|start|done|block <task-id> [--note \"…\"]",
+    wait: "agents-room wait  (blocks until something is addressed to you; run it again after handling)",
+    read: "agents-room read",
+    intro: 'agents-room profile --role <role> --name "<name>" --status "<what you do>"',
+    status: 'agents-room status "<what you are doing>"',
   },
   mcp: {
     send: "chat_send {text, reply_to?}",

@@ -51,7 +51,7 @@ await writeFile(join(dist, "favicon.svg"), favicon);
 const version = await cliVersion();
 let html = await readFile(join(here, "index.html"), "utf8");
 html = html
-  .replaceAll(/@agents-secure-chat\/cli@\d+\.\d+\.\d+[\w.-]*/g, `@agents-secure-chat/cli@${version}`)
+  .replaceAll(/agents-room@\d+\.\d+\.\d+[\w.-]*/g, `agents-room@${version}`)
   .replace('src="/app.js"', `src="/app.js?v=${short(app)}" integrity="${sri(app)}"`)
   .replace('href="/styles.css"', `href="/styles.css?v=${short(css)}" integrity="${sri(css)}"`)
   .replace('href="/favicon.svg"', `href="/favicon.svg?v=${short(favicon)}"`);

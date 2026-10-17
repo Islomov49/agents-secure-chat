@@ -9,7 +9,7 @@ import { claudeMarketplace, claudePluginFiles, codexHooks, codexMcpToml, skillMa
 
 interface InstallOptions {
   dryRun?: boolean;
-  /** Command used to launch lincor, e.g. "npx -y @agents-secure-chat/cli@0.1.0" or "node /path/agents-secure-chat.js". */
+  /** Command used to launch lincor, e.g. "npx -y agents-room@0.1.0" or "node /path/agents-room.js". */
   command?: string;
 }
 
@@ -31,7 +31,7 @@ function launchFor(dir: string, options: InstallOptions, dryRun: boolean): Launc
     return { command: parts[0], args: parts.slice(1) };
   }
   const bundle = fileURLToPath(import.meta.url);
-  const target = join(dir, "bin", "agents-secure-chat.js");
+  const target = join(dir, "bin", "agents-room.js");
   if (!dryRun && bundle.endsWith(".js") && existsSync(bundle)) {
     mkdirSync(dirname(target), { recursive: true });
     copyFileSync(bundle, target);
@@ -52,12 +52,12 @@ const run = (bin: string, args: string[]): string => execFileSync(bin, args, { e
 export async function install(target: string, options: InstallOptions = {}): Promise<Result> {
   if (target === "claude-code" || target === "claude") return installClaude(options);
   if (target === "codex") return installCodex(options);
-  throw new UserError("Usage: agents-secure-chat install claude-code|codex [--dry-run] [--command \"<how to run lincor>\"]");
+  throw new UserError("Usage: agents-room install claude-code|codex [--dry-run] [--command \"<how to run lincor>\"]");
 }
 
 export async function uninstall(target: string, options: { dryRun?: boolean } = {}): Promise<Result> {
   if (target === "claude-code" || target === "claude") {
-    const steps = ["claude plugin uninstall agents-secure-chat@agents-secure-chat", "claude plugin marketplace remove agents-secure-chat"];
+    const steps = ["claude plugin uninstall agents-room@agents-room", "claude plugin marketplace remove agents-room"];
     if (!options.dryRun && which("claude")) {
       for (const s of steps) {
         try {
@@ -73,23 +73,23 @@ export async function uninstall(target: string, options: { dryRun?: boolean } = 
   if (target === "codex") {
     const codexHome = process.env.CODEX_HOME || join(homedir(), ".codex");
     if (!options.dryRun) {
-      removeTomlSection(join(codexHome, "config.toml"), "mcp_servers.agents-secure-chat");
-      rmSync(join(codexHome, "skills", "agents-secure-chat"), { recursive: true, force: true });
+      removeTomlSection(join(codexHome, "config.toml"), "mcp_servers.agents-room");
+      rmSync(join(codexHome, "skills", "agents-room"), { recursive: true, force: true });
       editHooks(join(codexHome, "hooks.json"), () => ({}));
       rmSync(join(lincorHome(), "integrations", "codex"), { recursive: true, force: true });
     }
     return { text: `${options.dryRun ? "Would remove" : "Removed"} the Agents secure chat MCP server, skill and hooks from ${codexHome}.` };
   }
-  throw new UserError("Usage: agents-secure-chat uninstall claude-code|codex");
+  throw new UserError("Usage: agents-room uninstall claude-code|codex");
 }
 
 function installClaude(options: InstallOptions): Result {
   const root = join(lincorHome(), "integrations", "claude-code");
-  const pluginDir = join(root, "agents-secure-chat");
+  const pluginDir = join(root, "agents-room");
   const dryRun = !!options.dryRun;
   const launch = launchFor(pluginDir, options, dryRun);
-  const files = { ...prefix("agents-secure-chat/", claudePluginFiles(launch)), ".claude-plugin/marketplace.json": claudeMarketplace() };
-  const steps = [`claude plugin marketplace add ${root}`, "claude plugin install agents-secure-chat@agents-secure-chat --scope user"];
+  const files = { ...prefix("agents-room/", claudePluginFiles(launch)), ".claude-plugin/marketplace.json": claudeMarketplace() };
+  const steps = [`claude plugin marketplace add ${root}`, "claude plugin install agents-room@agents-room --scope user"];
   if (dryRun) {
     return { text: `Would write a Claude Code plugin to ${root}:\n${Object.keys(files).map((f) => "  " + f).join("\n")}\nand run:\n${steps.join("\n")}` };
   }
@@ -99,12 +99,12 @@ function installClaude(options: InstallOptions): Result {
   }
   const log: string[] = [];
   try {
-    run("claude", ["plugin", "marketplace", "remove", "agents-secure-chat"]);
+    run("claude", ["plugin", "marketplace", "remove", "agents-room"]);
   } catch {
     // not added before
   }
   log.push(run("claude", ["plugin", "marketplace", "add", root]));
-  log.push(run("claude", ["plugin", "install", "agents-secure-chat@agents-secure-chat", "--scope", "user"]));
+  log.push(run("claude", ["plugin", "install", "agents-room@agents-room", "--scope", "user"]));
   return {
     text: `Installed the Agents secure chat plugin for Claude Code (MCP tools, skill, hooks for background listening).\nRestart Claude Code sessions (or run /reload-plugins) to load it.\n${log.filter(Boolean).join("\n")}`,
   };
@@ -117,7 +117,7 @@ function installCodex(options: InstallOptions): Result {
   const launch = launchFor(dir, options, dryRun);
   const configPath = join(codexHome, "config.toml");
   const hooksPath = join(codexHome, "hooks.json");
-  const skillPath = join(codexHome, "skills", "agents-secure-chat", "SKILL.md");
+  const skillPath = join(codexHome, "skills", "agents-room", "SKILL.md");
   if (dryRun) {
     return {
       text: `Would update ${configPath} with:\n${codexMcpToml(launch)}\nwrite ${skillPath}\nand add Agents secure chat hooks to ${hooksPath}.`,
@@ -125,7 +125,7 @@ function installCodex(options: InstallOptions): Result {
   }
   mkdirSync(codexHome, { recursive: true });
   if (existsSync(configPath)) copyFileSync(configPath, configPath + ".lincor-backup");
-  removeTomlSection(configPath, "mcp_servers.agents-secure-chat");
+  removeTomlSection(configPath, "mcp_servers.agents-room");
   const before = existsSync(configPath) ? readFileSync(configPath, "utf8") : "";
   writeFileSync(configPath, (before && !before.endsWith("\n") ? before + "\n" : before) + "\n" + codexMcpToml(launch));
   mkdirSync(dirname(skillPath), { recursive: true });
@@ -134,7 +134,7 @@ function installCodex(options: InstallOptions): Result {
   return {
     text: [
       "Installed Agents secure chat for Codex:",
-      `- MCP server "agents-secure-chat" in ${configPath} (tool timeout 11 min for chat_wait; backup at config.toml.lincor-backup)`,
+      `- MCP server "agents-room" in ${configPath} (tool timeout 11 min for chat_wait; backup at config.toml.lincor-backup)`,
       `- skill ${skillPath}`,
       `- hooks in ${hooksPath} (session start briefing, messages on each prompt, Stop keeps you going when messages for you are pending)`,
       "Codex runs new hooks only after you trust them: open Codex and run /hooks once.",
@@ -171,7 +171,7 @@ export function editHooks(path: string, ours: () => Record<string, unknown>): vo
     }
   }
   const hooks = doc.hooks ?? {};
-  const isOurs = (group: { hooks?: { command?: string }[] }) => (group.hooks ?? []).some((h) => /(agents-secure-chat(\.js)?|@agents-secure-chat\/cli@\S+|lincor(\.js)?)['"]?\s+(hook|watch)\b/.test(h.command ?? ""));
+  const isOurs = (group: { hooks?: { command?: string }[] }) => (group.hooks ?? []).some((h) => /(agents-room(\.js)?|agents-room@\S+|lincor(\.js)?)['"]?\s+(hook|watch)\b/.test(h.command ?? ""));
   for (const event of Object.keys(hooks)) {
     hooks[event] = hooks[event].filter((g) => !isOurs(g));
     if (!hooks[event].length) delete hooks[event];

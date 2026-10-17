@@ -1,10 +1,10 @@
 {
   "mcpServers": {
-    "agents-secure-chat": {
+    "agents-room": {
       "command": "npx",
       "args": [
         "-y",
-        "@agents-secure-chat/cli@0.1.0",
+        "agents-room@0.1.0",
         "mcp"
       ]
     }

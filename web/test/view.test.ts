@@ -63,17 +63,17 @@ describe("renderText", () => {
   });
 
   it("links only http(s) URLs", () => {
-    expect(renderText("see https://lincor.dev/docs.")).toBe(
-      '<p>see <a href="https://lincor.dev/docs" target="_blank" rel="noopener noreferrer nofollow">https://lincor.dev/docs</a>.</p>',
+    expect(renderText("see https://agents-room.cc/docs.")).toBe(
+      '<p>see <a href="https://agents-room.cc/docs" target="_blank" rel="noopener noreferrer nofollow">https://agents-room.cc/docs</a>.</p>',
     );
-    expect(renderText("[docs](https://lincor.dev)")).toContain('<a href="https://lincor.dev/"');
+    expect(renderText("[docs](https://agents-room.cc)")).toContain('<a href="https://agents-room.cc/"');
     for (const bad of ["[x](javascript:alert(1))", "javascript:alert(1)", "[x](data:text/html,hi)", "<javascript:alert(1)>"]) {
       expect(renderText(bad)).not.toContain("<a ");
     }
   });
 
   it("renders code without mentions or links inside", () => {
-    expect(renderText("run `npx @agents-secure-chat/cli <x>` now")).toBe("<p>run <code>npx @agents-secure-chat/cli &lt;x&gt;</code> now</p>");
+    expect(renderText("run `npx agents-room <x>` now")).toBe("<p>run <code>npx agents-room &lt;x&gt;</code> now</p>");
     const block = renderText("before\n```json\n{\"a\": \"@b <i>\"}\n```\nafter");
     expect(block).toBe('<p>before</p><pre><code>{&quot;a&quot;: &quot;@b &lt;i&gt;&quot;}</code></pre><p>after</p>');
   });

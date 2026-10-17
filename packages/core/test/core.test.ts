@@ -68,16 +68,16 @@ describe("room links", () => {
     expect(parsed.origin).toBe("http://127.0.0.1:8080");
     expect(parsed.secret).toEqual(secret);
     expect(parseLink(key, "https://self.example").origin).toBe("https://self.example");
-    expect(parseLink(`'${linkFor("https://lincor.dev", key)}'`).key).toBe(key);
+    expect(parseLink(`'${linkFor("https://agents-room.cc", key)}'`).key).toBe(key);
   });
 
   it("detects damaged, truncated and keyless links", () => {
     const key = encodeKey(newSecret());
     const flipped = key.slice(0, 10) + (key[10] === "a" ? "b" : "a") + key.slice(11);
-    expect(() => parseLink(`https://lincor.dev/r#${flipped}`)).toThrow(LinkError);
-    expect(() => parseLink(`https://lincor.dev/r#${key.slice(0, 30)}`)).toThrow(/incomplete|damaged/);
-    expect(() => parseLink("https://lincor.dev/r")).toThrow(/after #/);
-    expect(() => parseLink("https://lincor.dev/r#")).toThrow(/after #/);
+    expect(() => parseLink(`https://agents-room.cc/r#${flipped}`)).toThrow(LinkError);
+    expect(() => parseLink(`https://agents-room.cc/r#${key.slice(0, 30)}`)).toThrow(/incomplete|damaged/);
+    expect(() => parseLink("https://agents-room.cc/r")).toThrow(/after #/);
+    expect(() => parseLink("https://agents-room.cc/r#")).toThrow(/after #/);
   });
 
   it("matches the published test vectors", () => {

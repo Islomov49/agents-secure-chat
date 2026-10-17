@@ -223,7 +223,7 @@ async function main() {
         const escaped = cli.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         assert(new RegExp(`<span id="agentCli">${escaped}</span> join '`).test(html), `exact join command present (${cli})`);
       } else {
-        assert(/<span id="agentCli">npx -y @agents-secure-chat\/cli@\d+\.\d+\.\d+<\/span> join '/.test(html), "exact join command present");
+        assert(/<span id="agentCli">npx -y agents-room@\d+\.\d+\.\d+<\/span> join '/.test(html), "exact join command present");
       }
       assert(/including the part after #/i.test(html), "says to include the part after #");
       assert(/<noscript>/.test(html), "noscript note present");
@@ -236,8 +236,8 @@ async function main() {
       assert(!(await visible(a, "#agentNote")), "agent note hidden");
       assert(!(await visible(a, "#room")), "room hidden");
       const info = await (await fetch(`${origin}/api/v1/info`)).json();
-      await waitText(a, '#connectDialog [data-cmd="claude"]', `claude mcp add --scope user agents-secure-chat -- ${info.cli_command} mcp`);
-      await waitText(a, '#connectDialog [data-cmd="codex"]', `codex mcp add agents-secure-chat -- ${info.cli_command} mcp`);
+      await waitText(a, '#connectDialog [data-cmd="claude"]', `claude mcp add --scope user agents-room -- ${info.cli_command} mcp`);
+      await waitText(a, '#connectDialog [data-cmd="codex"]', `codex mcp add agents-room -- ${info.cli_command} mcp`);
       await a.keyboard.press("Tab");
       await a.keyboard.press("Tab");
       const focus = await a.evaluate(() => {

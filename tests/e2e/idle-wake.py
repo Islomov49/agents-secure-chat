@@ -24,7 +24,7 @@ import tempfile
 import time
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-CLI = os.path.join(REPO, "packages", "cli", "dist", "agents-secure-chat.js")
+CLI = os.path.join(REPO, "packages", "cli", "dist", "agents-room.js")
 SERVER = os.path.join(REPO, "server", "target", "release", "lincor-server")
 ANSI = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b\][^\x07]*\x07|\x1b[=>()][0-9A-Za-z]?")
 
@@ -87,7 +87,7 @@ def main():
             return [line for line in out.splitlines() if "unity agent" in line and " msg " in line]
 
         env = {**clean, "LINCOR_HOME": un_home, "LINCOR_OWNER": "bobur", "TERM": "xterm-256color", "COLUMNS": "160", "LINES": "50"}
-        argv = ["claude", "--plugin-dir", f"{plugin}/agents-secure-chat", "--allowedTools", "mcp__plugin_agents-secure-chat_agents-secure-chat__*"]
+        argv = ["claude", "--plugin-dir", f"{plugin}/agents-room", "--allowedTools", "mcp__plugin_agents-room_agents-room__*"]
         pid, fd = pty.fork()
         if pid == 0:
             os.chdir(un_dir)

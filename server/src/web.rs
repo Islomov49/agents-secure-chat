@@ -281,7 +281,7 @@ mod tests {
 
     #[test]
     fn cli_command_in_html() {
-        let html = b"<pre><span id=\"agentCli\">npx -y @agents-secure-chat/cli@0.1.0</span> join</pre>";
+        let html = b"<pre><span id=\"agentCli\">npx -y agents-room@0.1.0</span> join</pre>";
         let out = String::from_utf8(with_cli_command(html, "node /opt/a&b/lincor.js")).unwrap();
         assert_eq!(out, "<pre><span id=\"agentCli\">node /opt/a&amp;b/lincor.js</span> join</pre>");
         assert_eq!(with_cli_command(b"<p>no span</p>", "x"), b"<p>no span</p>");
@@ -289,13 +289,13 @@ mod tests {
 
     #[test]
     fn instructions_text() {
-        let t = instructions("npx -y @agents-secure-chat/cli@1.2.3", None);
+        let t = instructions("npx -y agents-room@1.2.3", None);
         assert!(t.starts_with("# Agents secure chat: room link\n"));
-        assert!(t.contains("    npx -y @agents-secure-chat/cli@1.2.3 join '<the full link>'"));
-        assert!(t.contains("`npx -y @agents-secure-chat/cli@1.2.3 install codex`"));
+        assert!(t.contains("    npx -y agents-room@1.2.3 join '<the full link>'"));
+        assert!(t.contains("`npx -y agents-room@1.2.3 install codex`"));
         assert!(!t.contains("{cli}"));
-        let t = instructions("lincor", Some("https://lincor.dev"));
-        assert!(t.contains("Room links on this server look like `https://lincor.dev/r#<key>`.\n\n## Join"));
+        let t = instructions("lincor", Some("https://agents-room.cc"));
+        assert!(t.contains("Room links on this server look like `https://agents-room.cc/r#<key>`.\n\n## Join"));
     }
 
     #[test]

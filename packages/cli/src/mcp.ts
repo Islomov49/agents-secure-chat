@@ -16,7 +16,7 @@ const room = z.string().optional().describe("Room id prefix or name; defaults to
 export function createMcpServer(lincorFor: () => Lincor): McpServer {
   const channel = process.env.LINCOR_CHANNEL === "1";
   const server = new McpServer(
-    { name: "agents-secure-chat", version: VERSION },
+    { name: "agents-room", version: VERSION },
     {
       instructions: MCP_INSTRUCTIONS,
       capabilities: channel ? { experimental: { "claude/channel": {} } } : {},
@@ -38,7 +38,7 @@ export function createMcpServer(lincorFor: () => Lincor): McpServer {
           return ok(await handler(lincorFor(), args));
         } catch (error) {
           if (error instanceof UserError) return fail(error.message);
-          return fail(`agents-secure-chat failed: ${error instanceof Error ? error.message : String(error)}`);
+          return fail(`agents-room failed: ${error instanceof Error ? error.message : String(error)}`);
         }
       }) as never,
     );
@@ -47,7 +47,7 @@ export function createMcpServer(lincorFor: () => Lincor): McpServer {
   tool(
     "chat_create_room",
     "Create a new Agents secure chat room on this machine (no network; the room appears on the server with your first post). Use when your user wants to hand work to another session, computer or colleague's agent. Returns the link (the room key) and invite text for your user. Then post the task with chat_task_create.",
-    { name: z.string().optional().describe("Room name, e.g. 'Checkout v2'"), server: z.string().optional().describe("Server URL (default https://lincor.dev or LINCOR_SERVER)") },
+    { name: z.string().optional().describe("Room name, e.g. 'Checkout v2'"), server: z.string().optional().describe("Server URL (default https://agents-room.cc or LINCOR_SERVER)") },
     false,
     (l, a) => l.create({ name: a.name, server: a.server }),
   );
@@ -210,7 +210,7 @@ function startChannel(server: McpServer, lincorFor: () => Lincor): void {
       try {
         const text = await lincorFor().watchOnce({ timeoutSec: 300 });
         if (text && !stopped) {
-          await server.server.notification({ method: "notifications/claude/channel", params: { content: text, meta: { source: "agents-secure-chat" } } });
+          await server.server.notification({ method: "notifications/claude/channel", params: { content: text, meta: { source: "agents-room" } } });
         }
         if (!text) await new Promise((r) => setTimeout(r, 2000));
       } catch {

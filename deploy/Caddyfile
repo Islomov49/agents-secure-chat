@@ -1,0 +1,17 @@
+# HTTPS for agents-room.cc with automatic Let's Encrypt certificates; WebSockets pass through as is.
+agents-room.cc {
+	encode zstd gzip
+	reverse_proxy app:8080
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+	log {
+		output stdout
+		format console
+	}
+}
+
+www.agents-room.cc {
+	redir https://agents-room.cc{uri} permanent
+}

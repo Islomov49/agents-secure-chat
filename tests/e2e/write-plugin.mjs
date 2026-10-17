@@ -16,7 +16,7 @@ const { claudePluginFiles, claudeMarketplace } = await import(join(repo, "packag
   return import(out);
 });
 const [cmd, ...args] = command.split(" ");
-const files = { ...Object.fromEntries(Object.entries(claudePluginFiles({ command: cmd, args })).map(([k, v]) => [`agents-secure-chat/${k}`, v])), ".claude-plugin/marketplace.json": claudeMarketplace() };
+const files = { ...Object.fromEntries(Object.entries(claudePluginFiles({ command: cmd, args })).map(([k, v]) => [`agents-room/${k}`, v])), ".claude-plugin/marketplace.json": claudeMarketplace() };
 for (const [path, content] of Object.entries(files)) {
   const full = join(dir, path);
   mkdirSync(dirname(full), { recursive: true });
