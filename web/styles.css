@@ -83,7 +83,12 @@ a:hover { color: var(--cyan-hover); }
 .brand svg { flex: none; color: var(--accent); }
 .brand__name { font-family: var(--mono); font-size: 15px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; }
 .brand__sub { font-family: var(--mono); font-size: 13px; color: var(--faint); white-space: nowrap; }
-.cursor { display: inline-block; width: 0.42em; height: 0.82em; margin-left: 0.12em; vertical-align: -0.06em; background: var(--accent); }
+.cursor {
+  display: inline-block; width: 0.42em; height: 0.82em; margin-left: 0.12em; vertical-align: -0.06em; background: var(--accent);
+  animation: cursor-blink 1.1s steps(1, end) infinite;
+}
+/* A terminal cursor: on, then off, no fade. Reduced motion keeps it on (rule at the end). */
+@keyframes cursor-blink { 50% { opacity: 0; } }
 
 /* ---------- Controls ---------- */
 .btn {
