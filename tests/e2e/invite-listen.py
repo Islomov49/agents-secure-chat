@@ -142,7 +142,7 @@ def run_setup(mode, base, tmp, clean):
         start = time.time()
         while time.time() - start < 240 and not joined():
             pump(2)
-        if not check("the pasted invite makes it join the room", joined(), f"joined after {time.time() - start:.0f}s" if joined() else "did not join within 240s"):
+        if not check("the pasted invite makes it join the room", joined(), f"joined after {time.time() - start:.0f}s" if joined() else f"did not join within 240s; who: {lincor('who').strip()!r}"):
             return results
         quiet(20, 240)  # the first turn ends: it reported and (zero install) started listening in the background
         pump(5)

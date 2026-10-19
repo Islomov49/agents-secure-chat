@@ -1,6 +1,6 @@
 // Home: a fresh room link is made in this browser as soon as the page opens (no network; the room
 // appears on the server with its first message). PRD FR-10.0.
-import { AGENT_PROMPT_LEAD, agentPrompt, agentPromptSteps, encodeKey, inviteText, linkFor, newSecret, serverInfo } from "@lincor/core";
+import { AGENT_PROMPT_LEAD, AGENT_PROMPT_STEPS, agentPrompt, encodeKey, inviteText, linkFor, newSecret, serverInfo } from "@lincor/core";
 import { $, copyText } from "./dom";
 import { forgetRecord, rememberedRooms, type Stores } from "./storage";
 import { escapeHtml } from "./view";
@@ -33,7 +33,7 @@ function renderCommands() {
   const agentCli = document.getElementById("agentCli");
   if (agentCli) agentCli.textContent = cliCommand;
   // A compact preview of the prompt (two lines, cut off); Copy prompt copies all of it.
-  const steps = agentPromptSteps(cliCommand).join(" ");
+  const steps = AGENT_PROMPT_STEPS.join(" ");
   const preview = $("promptSteps");
   preview.textContent = steps;
   preview.title = steps;
@@ -122,8 +122,8 @@ export function initHome(h: HomeHooks) {
     $("badLink").hidden = true;
   });
   $("copyLinkHome").addEventListener("click", (e) => fresh && copyText(linkOf(fresh.key), e.currentTarget as HTMLElement));
-  $("copyInviteHome").addEventListener("click", (e) => fresh && copyText(inviteText(linkOf(fresh.key), cliCommand), e.currentTarget as HTMLElement));
-  $("copyPromptHome").addEventListener("click", (e) => fresh && copyText(agentPrompt(linkOf(fresh.key), cliCommand), e.currentTarget as HTMLElement));
+  $("copyInviteHome").addEventListener("click", (e) => fresh && copyText(inviteText(linkOf(fresh.key)), e.currentTarget as HTMLElement));
+  $("copyPromptHome").addEventListener("click", (e) => fresh && copyText(agentPrompt(linkOf(fresh.key)), e.currentTarget as HTMLElement));
   $("openRoom").addEventListener("click", () => {
     if (!fresh) return;
     const { key, secret } = fresh;

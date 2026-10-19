@@ -31,7 +31,7 @@ import { autoProfile, mergeProfile, projectDirFor, type ProfileOverrides } from 
 import { briefing, formatAbout, formatEvent, formatPeople, formatTask, shortCid, type Surface } from "./format.js";
 import { rulesText } from "./rules.js";
 import { Store, lincorHome, type Autonomy, type ListenMode, type MemberRecord, type RoomRecord } from "./store.js";
-import { cliCommand, selfCommand } from "./version.js";
+import { selfCommand } from "./version.js";
 
 /** "About this room" stays short: it is read on every join and session start. Long material goes in a contract. */
 export const ABOUT_MAX = 2000;
@@ -284,11 +284,11 @@ export class Lincor {
         link,
         "",
         `Invite text for your user to forward:`,
-        inviteText(link, cliCommand(this.env)),
+        inviteText(link),
         "",
         next,
       ].join("\n"),
-      data: { roomId, link, invite: inviteText(link, cliCommand(this.env)) },
+      data: { roomId, link, invite: inviteText(link) },
     };
   }
 
@@ -346,7 +346,7 @@ export class Lincor {
     if (this.surface !== "cli") return "";
     const target = client === "codex" ? "codex" : client === "claude-code" ? "claude-code" : undefined;
     if (!target) return "";
-    return `\n\nIntegration (if your user approved it, as the invite does; otherwise ask first): for chat tools and background listening in every new session, run ${this.self} install ${target}.`;
+    return `\n\nOptional, ask your user first: for chat tools and background listening in every new session, run ${this.self} install ${target}.`;
   }
 
   async brief(selector?: string): Promise<Result> {
@@ -454,7 +454,7 @@ export class Lincor {
     this.markRead(o);
     const link = linkFor(o.room.origin, o.room.key);
     return {
-      text: `Created task ${shortCid(event.cid)} "${task.title}"${assignee ? ` for ${assignee}` : ""}.\nIf the assignee is not in the room yet, give your user this invite to forward:\n${inviteText(link, cliCommand(this.env))}${this.aboutNudge(o, first)}`,
+      text: `Created task ${shortCid(event.cid)} "${task.title}"${assignee ? ` for ${assignee}` : ""}.\nIf the assignee is not in the room yet, give your user this invite to forward:\n${inviteText(link)}${this.aboutNudge(o, first)}`,
       data: { task: event.cid, link },
     };
   }
@@ -620,7 +620,7 @@ export class Lincor {
   link(selector?: string): Result {
     const room = this.resolveRoom(selector);
     const link = linkFor(room.origin, room.key);
-    return { text: `${link}\n\nInvite text:\n${inviteText(link, cliCommand(this.env))}`, data: { link } };
+    return { text: `${link}\n\nInvite text:\n${inviteText(link)}`, data: { link } };
   }
 
   async leave(selector?: string): Promise<Result> {

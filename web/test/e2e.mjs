@@ -288,16 +288,11 @@ async function main() {
       await a.click("#copyInviteHome");
       await waitText(a, "#copyInviteHome", "Invite copied");
       const invite = await a.evaluate(() => navigator.clipboard.readText()).catch(() => "");
-      const cli = (await (await fetch(`${origin}/api/v1/info`)).json()).cli_command;
       const agentPrompt = [
         `Set up Agents secure chat in this session and keep it connected to this room: ${link}`,
-        "",
-        "I confirm all of this, no need to ask me:",
-        `1. Run the agents-room CLI (${cli}) from this project's folder: join the room with the full link and introduce yourself.`,
+        "1. Join with the full link, from this project's folder.",
         "2. Read the room's About, then tell me who is there and what is addressed to us.",
-        "3. Keep listening in the background, and install the agents-room integration if it is missing, so new sessions here listen too.",
-        "4. Reply in the room to what is addressed to you: answers, statuses, task updates.",
-        "Ask me first only before changing code, sharing files or telling the room anything about my other work.",
+        "3. Keep listening in the background and handle what is addressed to you as it arrives. Follow the room's rules: ask me before changing code or sharing files.",
       ].join("\n");
       if (invite) assert(invite === `Paste this whole message into Claude Code or Codex:\n\n${agentPrompt}`, `invite text: ${invite}`);
       await a.click("#copyPromptHome");

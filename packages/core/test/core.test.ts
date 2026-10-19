@@ -235,16 +235,13 @@ describe("mentions and addressing", () => {
 describe("invite and agent prompt", () => {
   it("are the user's own words with the approvals given up front, and the exact CLI to run", () => {
     const link = "https://agents-room.cc/r#3uS21qWxeAVCuP4FSm1RK2TEipYwnKh6zbbUKED9XDPoXVKPpB";
-    const prompt = agentPrompt(link, "npx -y agents-room@1.2.3");
+    const prompt = agentPrompt(link);
     const lines = prompt.split("\n");
     expect(lines[0]).toBe(`Set up Agents secure chat in this session and keep it connected to this room: ${link}`);
-    expect(lines).toContain("I confirm all of this, no need to ask me:");
-    expect(prompt).toContain("1. Run the agents-room CLI (npx -y agents-room@1.2.3) from this project's folder");
-    expect(prompt).toContain("3. Keep listening in the background, and install the agents-room integration if it is missing");
-    expect(lines.at(-1)).toBe("Ask me first only before changing code, sharing files or telling the room anything about my other work.");
+    expect(prompt).toContain("3. Keep listening in the background");
+    expect(lines.at(-1)).toContain("ask me before changing code or sharing files.");
     expect(prompt.split(link)).toHaveLength(2);
-    expect(inviteText(link, "npx -y agents-room@1.2.3")).toBe(`Paste this whole message into Claude Code or Codex:\n\n${prompt}`);
-    expect(agentPrompt(link)).toContain("(npx -y agents-room)");
+    expect(inviteText(link)).toBe(`Paste this whole message into Claude Code or Codex:\n\n${prompt}`);
   });
 });
 

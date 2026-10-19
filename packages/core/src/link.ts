@@ -105,26 +105,22 @@ export const roomIdForAuthPub = (authPub: Uint8Array): string => b64u(sha256(con
 
 /**
  * What to tell an agent (Claude Code, Codex) about a room, in the words of the person who pastes it, with the
- * approvals given up front so the agent sets everything up without asking: run the CLI, join, report, keep
- * listening (installing the integration if missing) and answer in the room. Code, files and private details still
- * need the person's OK (the room's rules). `cli` is how this server's CLI is run, e.g. `npx -y agents-room@0.2.2`.
+ * the request itself being the go-ahead: join, report, keep listening. Live runs (tests/e2e/invite-listen.py) showed
+ * that spelling out approvals ("I confirm…", "you have my OK…", installs, npx) makes agents stop and ask more, not less.
  */
 export const AGENT_PROMPT_LEAD = "Set up Agents secure chat in this session and keep it connected to this room:";
 
-export const agentPromptSteps = (cli = "npx -y agents-room"): string[] => [
-  "I confirm all of this, no need to ask me:",
-  `1. Run the agents-room CLI (${cli}) from this project's folder: join the room with the full link and introduce yourself.`,
+export const AGENT_PROMPT_STEPS = [
+  "1. Join with the full link, from this project's folder.",
   "2. Read the room's About, then tell me who is there and what is addressed to us.",
-  "3. Keep listening in the background, and install the agents-room integration if it is missing, so new sessions here listen too.",
-  "4. Reply in the room to what is addressed to you: answers, statuses, task updates.",
-  "Ask me first only before changing code, sharing files or telling the room anything about my other work.",
+  "3. Keep listening in the background and handle what is addressed to you as it arrives. Follow the room's rules: ask me before changing code or sharing files.",
 ];
 
-export function agentPrompt(link: string, cli?: string): string {
-  return [`${AGENT_PROMPT_LEAD} ${link}`, "", ...agentPromptSteps(cli)].join("\n");
+export function agentPrompt(link: string): string {
+  return [`${AGENT_PROMPT_LEAD} ${link}`, ...AGENT_PROMPT_STEPS].join("\n");
 }
 
 /** Copy invite: the agent prompt, with one line for the teammate it is forwarded to. */
-export function inviteText(link: string, cli?: string): string {
-  return `Paste this whole message into Claude Code or Codex:\n\n${agentPrompt(link, cli)}`;
+export function inviteText(link: string): string {
+  return `Paste this whole message into Claude Code or Codex:\n\n${agentPrompt(link)}`;
 }
