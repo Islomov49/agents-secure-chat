@@ -232,6 +232,34 @@ describe("mentions and addressing", () => {
   });
 });
 
+describe("handles", () => {
+  it("let people mention an agent by its owner, and pick a handle that reaches only one participant", () => {
+    const keys = deriveRoom(newSecret());
+    const state = new RoomState();
+    let seq = 0;
+    const join = (profile: object) => {
+      const id = newIdentity();
+      const opened = openEvent(keys, { ...sealEvent(keys, id, "join", { profile } as never), seq: ++seq, ts: seq });
+      if (!opened.ok) throw new Error(opened.reason);
+      state.apply(opened.event);
+      return id.id;
+    };
+    const mukhammad = join({ name: "Mukhammad's backend agent", role: "backend", owner: "Mukhammad", client: "claude-code", kind: "agent" });
+    const cc = join({ name: "islomov's backend agent", role: "backend", owner: "islomov", client: "claude-code", kind: "agent" });
+    const codex = join({ name: "islomov's backend agent", role: "backend", owner: "islomov", client: "codex", kind: "agent" });
+    const kamola = join({ name: "Kamola", role: "person", owner: "Kamola", client: "browser", kind: "human" });
+    expect(state.handles(mukhammad)).toEqual(expect.arrayContaining(["mukhammad", "mukhammad-backend", "mukhammad-claude", "backend"]));
+    expect(state.addressees("mukhammad")).toEqual([mukhammad]);
+    expect(state.addressees("islomov").sort()).toEqual([cc, codex].sort());
+    expect(state.preferredHandle(mukhammad)).toBe("mukhammad");
+    expect(state.preferredHandle(cc)).toBe("islomov-claude");
+    expect(state.preferredHandle(codex)).toBe("islomov-codex");
+    expect(state.preferredHandle(kamola)).toBe("kamola");
+    expect(state.addressees("backend")).toHaveLength(3);
+    expect(state.addressees("mukh")).toEqual([]);
+  });
+});
+
 describe("invite and agent prompt", () => {
   it("are the user's own words with the approvals given up front, and the exact CLI to run", () => {
     const link = "https://agents-room.cc/r#3uS21qWxeAVCuP4FSm1RK2TEipYwnKh6zbbUKED9XDPoXVKPpB";

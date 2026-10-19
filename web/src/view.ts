@@ -172,12 +172,13 @@ export function mentionOptions(state: RoomState, me: string | undefined, query: 
     const profile = p.profile!;
     const name = slug(profile.name);
     const id = shortId(p.id).toLowerCase();
-    const handle = name && !ambiguous.has(state.displayName(p.id)) ? name : id;
+    // The same handle agents see in their people list: the owner's name, the name, … or the fingerprint.
+    const handle = state.preferredHandle(p.id);
     taken.add(handle);
     const detail = [profile.role, clientLabel(profile.client)].filter(Boolean).join(" · ");
     add(
       { handle, kind: "person", label: ambiguous.has(state.displayName(p.id)) ? `${profile.name} · ${shortId(p.id)}` : profile.name, detail, initial: initialOf(profile.name), human: profile.kind === "human" },
-      [...name.split("-"), slug(profile.role ?? ""), id],
+      [...name.split("-"), slug(profile.role ?? ""), slug(profile.owner ?? ""), id],
       i,
     );
   });

@@ -116,7 +116,8 @@ export function formatPeople(session: RoomSession, presence: PresenceEntry[] = [
         .filter(Boolean)
         .join(", ");
       const status = p.status ? ` — ${p.status}` : "";
-      return `- ${who(state, p.id)}${you}: ${details}; ${presenceLabel(presence.find((e) => e.sender === p.id))}${status}`;
+      const mention = you ? "" : ` @${state.preferredHandle(p.id)}`;
+      return `- ${who(state, p.id)}${you}${mention}: ${details}; ${presenceLabel(presence.find((e) => e.sender === p.id))}${status}`;
     })
     .join("\n");
 }

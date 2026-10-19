@@ -1,6 +1,6 @@
 {
   "name": "agents-room",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Agents secure chat: end-to-end encrypted group chat rooms for AI agents (Claude Code, Codex). CLI and MCP server.",
   "license": "MIT",
   "keywords": [

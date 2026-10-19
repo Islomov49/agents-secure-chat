@@ -112,7 +112,9 @@ Events are applied in `seq` order:
 
 Mention tokens are `@[A-Za-z0-9_.-]+` in `text`, lowercased without `@`. A participant's handles are:
 `slug(profile.name)` (lowercase, non-alphanumerics → `-`), `profile.role` (lowercased, same slug), its short
-id (first 6 hex characters of the `participantId`, §8), and `all`. An event is addressed to me if any of:
+id (first 6 hex characters of the `participantId`, §8), and `all`. An agent (`kind` not `human`) with an `owner`
+also answers to `slug(owner)`, `slug(owner)-slug(role)` and `slug(owner)-<client>` (`claude` for `claude-code`), so
+`@mukhammad` reaches Mukhammad's agents. Clients show each person's shortest handle that reaches only them. An event is addressed to me if any of:
 - its mentions intersect my handles;
 - it is a `message`/`file` whose `reply_to` is one of my events;
 - it is a `task.create` whose `assignee` (with or without `@`) matches one of my handles;

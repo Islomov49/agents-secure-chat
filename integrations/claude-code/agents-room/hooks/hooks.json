@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx -y agents-room@0.2.1 hook session-start",
+            "command": "npx -y agents-room@0.2.2 hook session-start",
             "timeout": 20
           }
         ]
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx -y agents-room@0.2.1 hook user-prompt-submit",
+            "command": "npx -y agents-room@0.2.2 hook user-prompt-submit",
             "timeout": 10
           }
         ]
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx -y agents-room@0.2.1 hook post-tool-use",
+            "command": "npx -y agents-room@0.2.2 hook post-tool-use",
             "timeout": 10
           }
         ]
@@ -39,12 +39,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx -y agents-room@0.2.1 hook stop",
+            "command": "npx -y agents-room@0.2.2 hook stop",
             "timeout": 20
           },
           {
             "type": "command",
-            "command": "npx -y agents-room@0.2.1 watch --rewake --timeout 3600",
+            "command": "npx -y agents-room@0.2.2 watch --rewake --timeout 3600",
             "asyncRewake": true,
             "timeout": 3700
           }

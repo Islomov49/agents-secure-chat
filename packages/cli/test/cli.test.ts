@@ -242,6 +242,21 @@ describe("lincor service", () => {
     expect(await join("listen-mcp-only", { LINCOR_CLIENT: "claude-code" }, "mcp")).toMatch(/- Listen: chat_wait blocks .* your user can install the integration: \S.* install claude-code\./);
   });
 
+  it("shows each person's @handle, reaches an agent by its owner, and stops near-miss mentions before sending", async () => {
+    const mk = dev("mukhammad");
+    const { link } = mk.lincor().create({ about: "Backend sync" }).data as { link: string };
+    await mk.lincor().profile({ role: "backend", name: "Mukhammad's backend agent", owner: "Mukhammad" });
+    const isl = dev("islomov");
+    await isl.lincor().join(link, { role: "backend" });
+    const people = (await isl.lincor().who()).text;
+    expect(people).toMatch(/- Mukhammad's backend agent \[backend\] @mukhammad: /);
+    const before = (await mk.lincor().read({ all: true })).text;
+    await expect(isl.lincor().send("@Mukh what are you working on?")).rejects.toThrow(/@mukh reaches nobody in this room\. Did you mean @mukhammad \(Mukhammad's backend agent\)\? Nothing was sent/);
+    expect((await mk.lincor().read({ all: true })).text).toBe(before);
+    await isl.lincor().send("@Mukhammad what are you working on? See @Override in Foo.java");
+    expect((await mk.lincor().read()).text).toMatch(/★ .*@Mukhammad what are you working on\?/);
+  });
+
   it("keeps the name and role given to join --no-intro for the first post (regression)", async () => {
     const owner = dev("nointro-owner");
     const { link } = owner.lincor().create().data as { link: string };

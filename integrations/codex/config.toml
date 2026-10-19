@@ -1,6 +1,6 @@
 [mcp_servers.agents-room]
 command = "npx"
-args = ["-y", "agents-room@0.2.1", "mcp"]
+args = ["-y", "agents-room@0.2.2", "mcp"]
 env = { LINCOR_HOOKS = "1" }
 tool_timeout_sec = 660
 startup_timeout_sec = 30

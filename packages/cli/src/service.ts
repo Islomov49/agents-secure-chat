@@ -21,6 +21,9 @@ import {
   parseLink,
   randomBytes,
   b64u,
+  BROADCAST_HANDLES,
+  extractMentions,
+  slug,
   type EventOf,
   type FetchLike,
   type Profile,
@@ -234,6 +237,27 @@ export class Lincor {
     return first;
   }
 
+  /**
+   * Refuses a message whose @mention reaches nobody but looks like someone present (`@Mukh` for Mukhammad's agent),
+   * so the sender fixes it instead of posting twice. Other unknown tokens (code such as @Override, roles that have
+   * not joined yet) pass.
+   */
+  private checkMentions(o: Opened, text: string): void {
+    const state = o.session.state;
+    const me = o.session.identity.id;
+    const people = [...state.participants.values()].filter((p) => p.profile && !p.left && p.id !== me);
+    for (const token of extractMentions(text)) {
+      if (BROADCAST_HANDLES.includes(token) || state.addressees(token).length) continue;
+      const likely = people.filter((p) => {
+        const words = [...slug(p.profile!.name).split("-"), slug(p.profile!.owner ?? ""), slug(p.profile!.role ?? "")].filter((w) => w.length >= 3);
+        return token.length >= 3 && words.some((w) => w.startsWith(token) || token.startsWith(w));
+      });
+      if (!likely.length) continue;
+      const options = likely.map((p) => `@${state.preferredHandle(p.id)} (${state.displayName(p.id)})`).join(", ");
+      throw new UserError(`@${token} reaches nobody in this room. Did you mean ${options}? Nothing was sent; mention people with the @handle the people list shows (${this.cmd("agents-room who", "chat_who")}).`);
+    }
+  }
+
   /** PRD FR-1.5: whoever starts the work in a room without an About is asked to write it. */
   private aboutNudge(o: Opened, first: boolean): string {
     if (!first || o.session.state.meta.description?.trim()) return "";
@@ -388,6 +412,7 @@ export class Lincor {
 
   async send(text: string, options: { replyTo?: string; room?: string } = {}): Promise<Result> {
     const o = await this.open(options.room);
+    this.checkMentions(o, text);
     const first = await this.ensureIntroduced(o);
     const event = await this.guard(o, () => o.session.say(text, { replyTo: options.replyTo }));
     this.markRead(o);

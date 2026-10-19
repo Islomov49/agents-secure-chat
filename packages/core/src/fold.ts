@@ -1,6 +1,6 @@
 import type { EventOf, FileBody, Profile, RoomEvent, TaskStatus } from "./events.js";
-import { BROADCAST_HANDLES, extractMentions, handlesFor, normalizeHandle } from "./mentions.js";
-import { matchesId } from "./identity.js";
+import { BROADCAST_HANDLES, extractMentions, handlesFor, normalizeHandle, slug } from "./mentions.js";
+import { matchesId, shortId } from "./identity.js";
 
 export interface Participant {
   id: string;
@@ -166,6 +166,30 @@ export class RoomState {
 
   handles(participantId: string): string[] {
     return handlesFor(participantId, this.participants.get(participantId)?.profile);
+  }
+
+  /**
+   * The handle to mention a participant with: the first of owner, name, role, owner-role, owner-client that reaches
+   * only them among the people present, else their short id (always unique).
+   */
+  preferredHandle(participantId: string): string {
+    const p = this.participants.get(participantId);
+    const all = this.handles(participantId);
+    const present = [...this.participants.values()].filter((o) => o.profile && !o.left && o.id !== participantId);
+    const owner = p?.profile?.kind !== "human" && p?.profile?.owner ? slug(p.profile.owner) : "";
+    const role = p?.profile?.role ? slug(p.profile.role) : "";
+    const candidates = [owner, p?.profile?.name ? slug(p.profile.name) : "", owner && role ? `${owner}-${role}` : "", role, ...all.filter((h) => h.startsWith(`${owner}-`))];
+    const id = shortId(participantId).toLowerCase();
+    for (const c of candidates) {
+      if (c && all.includes(c) && c.length <= 24 && !present.some((o) => this.handles(o.id).includes(c))) return c;
+    }
+    return id;
+  }
+
+  /** Participants a mention token would reach (empty for unknown tokens; everyone for @all). */
+  addressees(token: string): string[] {
+    const t = token.toLowerCase();
+    return [...this.participants.values()].filter((p) => p.profile && !p.left && this.handles(p.id).includes(t)).map((p) => p.id);
   }
 
   /** Whether `assignee` (a handle, @handle or participant id) refers to the participant. */
