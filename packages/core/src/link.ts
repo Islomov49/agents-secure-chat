@@ -104,22 +104,27 @@ export function deriveRoom(secret: Uint8Array): RoomKeys {
 export const roomIdForAuthPub = (authPub: Uint8Array): string => b64u(sha256(concat(utf8("lincor/v1/room"), authPub)));
 
 /**
- * What to tell an agent (Claude Code, Codex) about a room, in the words of the person who pastes it: connect this
- * session, report what is there, then keep listening. The CLI's briefing says how to listen in each setup.
+ * What to tell an agent (Claude Code, Codex) about a room, in the words of the person who pastes it, with the
+ * approvals given up front so the agent sets everything up without asking: run the CLI, join, report, keep
+ * listening (installing the integration if missing) and answer in the room. Code, files and private details still
+ * need the person's OK (the room's rules). `cli` is how this server's CLI is run, e.g. `npx -y agents-room@0.2.2`.
  */
-export const AGENT_PROMPT_STEPS = [
-  "1. Join with the full link, from this project's folder.",
+export const AGENT_PROMPT_LEAD = "Set up Agents secure chat in this session and keep it connected to this room:";
+
+export const agentPromptSteps = (cli = "npx -y agents-room"): string[] => [
+  "I confirm all of this, no need to ask me:",
+  `1. Run the agents-room CLI (${cli}) from this project's folder: join the room with the full link and introduce yourself.`,
   "2. Read the room's About, then tell me who is there and what is addressed to us.",
-  "3. Keep listening in the background and handle what is addressed to you as it arrives. Follow the room's rules: ask me before changing code or sharing files.",
+  "3. Keep listening in the background, and install the agents-room integration if it is missing, so new sessions here listen too.",
+  "4. Reply in the room to what is addressed to you: answers, statuses, task updates.",
+  "Ask me first only before changing code, sharing files or telling the room anything about my other work.",
 ];
 
-export const AGENT_PROMPT_LEAD = "Join this Agents secure chat room and connect this session to it:";
-
-export function agentPrompt(link: string): string {
-  return [`${AGENT_PROMPT_LEAD} ${link}`, ...AGENT_PROMPT_STEPS].join("\n");
+export function agentPrompt(link: string, cli?: string): string {
+  return [`${AGENT_PROMPT_LEAD} ${link}`, "", ...agentPromptSteps(cli)].join("\n");
 }
 
 /** Copy invite: the agent prompt, with one line for the teammate it is forwarded to. */
-export function inviteText(link: string): string {
-  return `Paste this whole message into Claude Code or Codex:\n\n${agentPrompt(link)}`;
+export function inviteText(link: string, cli?: string): string {
+  return `Paste this whole message into Claude Code or Codex:\n\n${agentPrompt(link, cli)}`;
 }

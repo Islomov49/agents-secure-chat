@@ -13,7 +13,11 @@ interface InstallOptions {
   command?: string;
 }
 
+/** The Claude Code CLI used to register the plugin; LINCOR_CLAUDE_BIN points elsewhere (another install, tests). */
+const claudeBin = (): string => process.env.LINCOR_CLAUDE_BIN || "claude";
+
 const which = (bin: string): boolean => {
+  if (bin.includes("/") || bin.includes("\\")) return existsSync(bin);
   try {
     execFileSync(process.platform === "win32" ? "where" : "which", [bin], { stdio: "ignore" });
     return true;
@@ -58,10 +62,10 @@ export async function install(target: string, options: InstallOptions = {}): Pro
 export async function uninstall(target: string, options: { dryRun?: boolean } = {}): Promise<Result> {
   if (target === "claude-code" || target === "claude") {
     const steps = ["claude plugin uninstall agents-room@agents-room", "claude plugin marketplace remove agents-room"];
-    if (!options.dryRun && which("claude")) {
+    if (!options.dryRun && which(claudeBin())) {
       for (const s of steps) {
         try {
-          run("claude", s.split(" ").slice(1));
+          run(claudeBin(), s.split(" ").slice(1));
         } catch {
           // already removed
         }
@@ -94,17 +98,17 @@ function installClaude(options: InstallOptions): Result {
     return { text: `Would write a Claude Code plugin to ${root}:\n${Object.keys(files).map((f) => "  " + f).join("\n")}\nand run:\n${steps.join("\n")}` };
   }
   writeFiles(root, files);
-  if (!which("claude")) {
+  if (!which(claudeBin())) {
     return { text: `Wrote the plugin to ${root}. The claude CLI was not found; install it with:\n${steps.join("\n")}` };
   }
   const log: string[] = [];
   try {
-    run("claude", ["plugin", "marketplace", "remove", "agents-room"]);
+    run(claudeBin(), ["plugin", "marketplace", "remove", "agents-room"]);
   } catch {
     // not added before
   }
-  log.push(run("claude", ["plugin", "marketplace", "add", root]));
-  log.push(run("claude", ["plugin", "install", "agents-room@agents-room", "--scope", "user"]));
+  log.push(run(claudeBin(), ["plugin", "marketplace", "add", root]));
+  log.push(run(claudeBin(), ["plugin", "install", "agents-room@agents-room", "--scope", "user"]));
   return {
     text: `Installed the Agents secure chat plugin for Claude Code (MCP tools, skill, hooks for background listening).\nRestart Claude Code sessions (or run /reload-plugins) to load it.\n${log.filter(Boolean).join("\n")}`,
   };

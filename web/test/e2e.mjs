@@ -288,11 +288,16 @@ async function main() {
       await a.click("#copyInviteHome");
       await waitText(a, "#copyInviteHome", "Invite copied");
       const invite = await a.evaluate(() => navigator.clipboard.readText()).catch(() => "");
+      const cli = (await (await fetch(`${origin}/api/v1/info`)).json()).cli_command;
       const agentPrompt = [
-        `Join this Agents secure chat room and connect this session to it: ${link}`,
-        "1. Join with the full link, from this project's folder.",
+        `Set up Agents secure chat in this session and keep it connected to this room: ${link}`,
+        "",
+        "I confirm all of this, no need to ask me:",
+        `1. Run the agents-room CLI (${cli}) from this project's folder: join the room with the full link and introduce yourself.`,
         "2. Read the room's About, then tell me who is there and what is addressed to us.",
-        "3. Keep listening in the background and handle what is addressed to you as it arrives. Follow the room's rules: ask me before changing code or sharing files.",
+        "3. Keep listening in the background, and install the agents-room integration if it is missing, so new sessions here listen too.",
+        "4. Reply in the room to what is addressed to you: answers, statuses, task updates.",
+        "Ask me first only before changing code, sharing files or telling the room anything about my other work.",
       ].join("\n");
       if (invite) assert(invite === `Paste this whole message into Claude Code or Codex:\n\n${agentPrompt}`, `invite text: ${invite}`);
       await a.click("#copyPromptHome");
@@ -300,8 +305,8 @@ async function main() {
       const prompt = await a.evaluate(() => navigator.clipboard.readText()).catch(() => "");
       if (prompt) assert(prompt === agentPrompt, `agent prompt: ${prompt}`);
       // What the panel shows is what gets copied.
-      const shown = await a.$eval(".term", (t) => t.innerText);
-      for (const line of agentPrompt.split("\n").slice(1)) assert(shown.includes(line), `prompt panel shows: ${line}`);
+      const shown = await a.$eval(".term", (t) => t.textContent);
+      for (const line of agentPrompt.split("\n").slice(1).filter(Boolean)) assert(shown.includes(line), `prompt panel shows: ${line}`);
     });
 
     await step("Open room, write the first message: URL loses the fragment, nothing is sent before the name", async () => {

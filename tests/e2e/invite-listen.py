@@ -12,7 +12,9 @@ Setups: "zero" (nothing installed: the agent runs the CLI and must start listeni
   python3 -I tests/e2e/invite-listen.py [zero|plugin|both]    (needs the release server and the built CLI; uses model tokens)
   LINCOR_E2E_URL=https://agents-room.cc python3 -I tests/e2e/invite-listen.py zero
       against a deployed server: the agent follows that server's instructions (its published npm CLI)
-Everything lives in a temp dir; ~/.claude settings, ~/.codex and ~/.lincor are not touched.
+Everything lives in a temp dir; ~/.claude settings, ~/.codex and ~/.lincor are not touched: the sessions skip user
+settings (so a plugin installed on this machine plays no part), and the integration installer, which the invite
+allows the agent to run, gets a stand-in `claude` (LINCOR_CLAUDE_BIN) that only records what it was asked to do.
 """
 import json
 import os
@@ -69,13 +71,21 @@ def run_setup(mode, base, tmp, clean):
     invite = created["invite"]
     lincor("send", "Hi all, I'm on the web side. Unity, please join when you can.")
 
-    env = {**clean, "LINCOR_HOME": un_home, "LINCOR_OWNER": "bobur", "TERM": "xterm-256color", "COLUMNS": "160", "LINES": "50"}
+    fake_claude = f"{root}/fake-claude"
+    install_log = f"{root}/install-calls.txt"
+    with open(fake_claude, "w") as f:
+        f.write(f"#!/bin/sh\necho \"$@\" >> '{install_log}'\n")
+    os.chmod(fake_claude, 0o755)
+    env = {**clean, "LINCOR_HOME": un_home, "LINCOR_OWNER": "bobur", "LINCOR_CLAUDE_BIN": fake_claude, "CODEX_HOME": f"{root}/codex-home",
+           "TERM": "xterm-256color", "COLUMNS": "160", "LINES": "50"}
+    claude = subprocess.run(["sh", "-c", "command -v claude"], capture_output=True, text=True).stdout.strip() or "claude"
+    no_user_settings = ["--setting-sources", "project,local"]
     if mode == "plugin":
         plugin = f"{root}/plugin"
         subprocess.run(["node", os.path.join(REPO, "tests/e2e/write-plugin.mjs"), plugin, f"node {CLI}"], check=True, capture_output=True)
-        argv = ["claude", "--plugin-dir", f"{plugin}/agents-room", "--allowedTools", "mcp__plugin_agents-room_agents-room__*", "WebFetch"]
+        argv = [claude, *no_user_settings, "--plugin-dir", f"{plugin}/agents-room", "--allowedTools", "mcp__plugin_agents-room_agents-room__*", "WebFetch", "Bash"]
     else:
-        argv = ["claude", "--allowedTools", "Bash", "WebFetch", "Read"]
+        argv = [claude, *no_user_settings, "--strict-mcp-config", "--allowedTools", "Bash", "WebFetch", "Read"]
 
     def joined():
         return "unity agent" in lincor("who")
@@ -153,6 +163,8 @@ def run_setup(mode, base, tmp, clean):
         wake("the idle session wakes on '@unity …' by itself and replies", "@unity are you listening? Reply in the room with the single word PONG.", "PONG")
         wake("it keeps listening: a second message wakes it again", "@unity one more: reply in the room with PONG2.", "PONG2")
         print(f"  the room as the web side sees it:\n    " + "\n    ".join(lincor("read", "--all", "--limit", "20").splitlines()[-6:]), flush=True)
+        calls = open(install_log).read().strip() if os.path.exists(install_log) else ""
+        print(f"  integration install the agent ran (stand-in claude): {calls.replace(chr(10), ' | ') or 'none'}", flush=True)
     finally:
         try:
             lincor("delete-room", "--yes")

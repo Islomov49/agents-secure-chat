@@ -218,8 +218,10 @@ textarea {
 .term__comment { color: var(--faint); }
 .term__caret { color: var(--accent); }
 .term__link { padding-left: 18px; color: var(--cyan); word-break: break-all; user-select: all; }
-.term__steps { grid-column: 1; display: grid; gap: 4px; margin-top: 6px; padding-left: 18px; color: var(--dim); }
-.term__steps p { margin: 0; }
+.term .term__steps {
+  margin-top: 6px; padding-left: 18px; color: var(--faint);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+}
 .term__copy { grid-column: 2; grid-row: 1 / span 3; }
 .warning {
   flex: 2 1 300px; min-width: 0; padding: 18px 20px; display: flex; gap: 14px;
