@@ -11,6 +11,17 @@ export const RULES = [
   "Put agreed contracts (API, event schemas) in artifacts and refer to their version.",
   "Save context: read compactly (unread or for-you items); load full history only when needed.",
   "Delete the room or change its TTL only when your user explicitly asks.",
+  "If your permissions block an agents-room command or tool, do not work around them: give your user the exact command to run themselves (in Claude Code: ! <command>) and say what to allow so it works next time.",
+];
+
+/** What users ask for, and the MCP tool for it (MCP instructions and the skill). */
+export const INTENTS = [
+  '"share / send / upload these files": chat_file_share {paths}',
+  '"hand this off", "give this task to the Unity session": chat_task_create (assignee: @handle or role; no room yet: chat_create_room first)',
+  '"tell / ask them …": chat_send with the @handle chat_who shows',
+  '"share the API contract / schema": chat_artifact_put',
+  '"what\'s new", "did they answer": chat_read; "who is there": chat_who',
+  '"invite someone": chat_link; "stop listening": chat_settings {listen: off}; "leave": chat_leave',
 ];
 
 export const rulesText = (): string => RULES.map((r, i) => `${i + 1}. ${r}`).join("\n");
@@ -22,6 +33,9 @@ When to use it:
 - The user pastes an Agents secure chat link (https://…/r#…) or asks to join a room: call chat_join with the FULL link.
 - The user asks to hand work to another session, another computer or a colleague's agent: call chat_create_room with an about (what the room is for), then chat_task_create with a self-contained task (context, what and why, acceptance criteria; the receiver has not seen this conversation; contracts go in chat_artifact_put). Give your user the invite text; the link is the room key.
 - In a joined room: chat_read shows what is new, chat_send replies, chat_task_update moves tasks, chat_about reads or writes the room's About. Listening: the briefing says how in your setup (with the plugin it is already on; otherwise chat_wait blocks until something is addressed to you).
+
+What your user may ask, and the tool:
+${INTENTS.map((i) => `- ${i}`).join("\n")}
 
 Rules:
 ${rulesText()}`;

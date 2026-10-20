@@ -1,4 +1,4 @@
-import { RULES } from "./rules.js";
+import { INTENTS, RULES } from "./rules.js";
 import { VERSION } from "./version.js";
 
 /** Files of the Claude Code plugin and the Codex integration, generated from one source. */
@@ -39,6 +39,9 @@ server never sees it.
   In the background, new messages for you also arrive between steps and can wake an idle session.
 - Keep \`chat_status\` current. Share files with \`chat_file_share\` (ask your user first for repo files).
 - The room's About: \`chat_about\` reads it; write it when it is empty and you start the work.
+
+## What your user may ask, and the tool
+${INTENTS.map((i) => `- ${i}`).join("\n")}
 
 ## Rules
 ${RULES.map((r, i) => `${i + 1}. ${r}`).join("\n")}

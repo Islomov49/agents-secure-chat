@@ -268,7 +268,7 @@ async function main() {
         hash: document.querySelector("#linkText .url__hash")?.textContent,
         prompt: document.getElementById("promptLink")?.textContent,
       }));
-      assert(parts.key === key && parts.hash === "#" && parts.prompt === shown, `link parts and agent prompt: ${JSON.stringify(parts)}`);
+      assert(parts.key === key && parts.hash === "#" && parts.prompt.endsWith(` setup '${shown}'`), `link parts and agent prompt: ${JSON.stringify(parts)}`);
       assert(roomRequests.length === 0, `no room requests yet: ${roomRequests.join(", ")}`);
       await waitText(a, ".warning", "can recover it");
       await a.click("#newLink");
@@ -288,11 +288,13 @@ async function main() {
       await a.click("#copyInviteHome");
       await waitText(a, "#copyInviteHome", "Invite copied");
       const invite = await a.evaluate(() => navigator.clipboard.readText()).catch(() => "");
+      const cli = (await (await fetch(`${origin}/api/v1/info`)).json()).cli_command;
       const agentPrompt = [
-        `Set up Agents secure chat in this session and keep it connected to this room: ${link}`,
-        "1. Join with the full link, from this project's folder.",
-        "2. Read the room's About, then tell me who is there and what is addressed to us.",
-        "3. Keep listening in the background and handle what is addressed to you as it arrives. Follow the room's rules: ask me before changing code or sharing files.",
+        "Connect this session to my team's Agents secure chat room and keep it listening.",
+        "Run this from this project's folder; it joins the room and sets up background listening:",
+        `${cli} setup '${link}'`,
+        "Then tell me who is there and what is addressed to us, and keep handling what is addressed to you. Ask me before changing code or sharing files.",
+        "If your permissions block the command, don't work around them: give me the exact command to run myself (in Claude Code: ! <command>) and tell me what to allow so it works next time.",
       ].join("\n");
       if (invite) assert(invite === `Paste this whole message into Claude Code or Codex:\n\n${agentPrompt}`, `invite text: ${invite}`);
       await a.click("#copyPromptHome");

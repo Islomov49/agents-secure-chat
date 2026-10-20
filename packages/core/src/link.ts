@@ -104,23 +104,25 @@ export function deriveRoom(secret: Uint8Array): RoomKeys {
 export const roomIdForAuthPub = (authPub: Uint8Array): string => b64u(sha256(concat(utf8("lincor/v1/room"), authPub)));
 
 /**
- * What to tell an agent (Claude Code, Codex) about a room, in the words of the person who pastes it, with the
- * the request itself being the go-ahead: join, report, keep listening. Live runs (tests/e2e/invite-listen.py) showed
- * that spelling out approvals ("I confirm…", "you have my OK…", installs, npx) makes agents stop and ask more, not less.
+ * What to tell an agent (Claude Code, Codex) about a room, in the words of the person who pastes it: one command that
+ * joins and sets up background listening, what to do next, and what to do if its permissions block the command
+ * (hand the person the command to run themselves instead of working around them). `cli` is how this server's CLI
+ * runs, e.g. `npx -y agents-room@0.2.3`.
  */
-export const AGENT_PROMPT_LEAD = "Set up Agents secure chat in this session and keep it connected to this room:";
-
-export const AGENT_PROMPT_STEPS = [
-  "1. Join with the full link, from this project's folder.",
-  "2. Read the room's About, then tell me who is there and what is addressed to us.",
-  "3. Keep listening in the background and handle what is addressed to you as it arrives. Follow the room's rules: ask me before changing code or sharing files.",
+export const DEFAULT_CLI = "npx -y agents-room";
+export const AGENT_PROMPT_LEAD = "Connect this session to my team's Agents secure chat room and keep it listening.";
+export const AGENT_PROMPT_INTRO = "Run this from this project's folder; it joins the room and sets up background listening:";
+export const agentSetupCommand = (link: string, cli = DEFAULT_CLI): string => `${cli} setup '${link}'`;
+export const AGENT_PROMPT_AFTER = [
+  "Then tell me who is there and what is addressed to us, and keep handling what is addressed to you. Ask me before changing code or sharing files.",
+  "If your permissions block the command, don't work around them: give me the exact command to run myself (in Claude Code: ! <command>) and tell me what to allow so it works next time.",
 ];
 
-export function agentPrompt(link: string): string {
-  return [`${AGENT_PROMPT_LEAD} ${link}`, ...AGENT_PROMPT_STEPS].join("\n");
+export function agentPrompt(link: string, cli?: string): string {
+  return [AGENT_PROMPT_LEAD, AGENT_PROMPT_INTRO, agentSetupCommand(link, cli), ...AGENT_PROMPT_AFTER].join("\n");
 }
 
 /** Copy invite: the agent prompt, with one line for the teammate it is forwarded to. */
-export function inviteText(link: string): string {
-  return `Paste this whole message into Claude Code or Codex:\n\n${agentPrompt(link)}`;
+export function inviteText(link: string, cli?: string): string {
+  return `Paste this whole message into Claude Code or Codex:\n\n${agentPrompt(link, cli)}`;
 }

@@ -179,6 +179,9 @@ textarea {
 .start__log .ok { color: var(--accent); }
 .start h1 { margin: 0; font-size: clamp(3rem, 2.2rem + 4vw, 4rem); line-height: 1.02; font-weight: 600; letter-spacing: -0.035em; text-wrap: balance; }
 .start__lead { margin: 0; max-width: 640px; font-size: 18px; line-height: 1.6; color: var(--dim); text-wrap: pretty; }
+.start__uses { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; max-width: 640px; font-size: 15px; line-height: 1.5; color: var(--dim); }
+.start__uses li { display: grid; grid-template-columns: 1.4em minmax(0, 1fr); }
+.start__uses li::before { content: "›"; font-family: var(--mono); color: var(--accent); }
 .error-note {
   margin: 0; max-width: 640px; padding: 12px 14px; border-radius: var(--r-block);
   border: 1px solid var(--alert-line); background: var(--alert-bg); color: var(--alert); font-size: 14px;

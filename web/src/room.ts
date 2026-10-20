@@ -783,7 +783,7 @@ class RoomController {
   }
 
   copyInvite(button?: HTMLElement | null) {
-    void copyText(inviteText(this.session.link), button);
+    void copyText(inviteText(this.session.link, agentCli()), button);
   }
 
   goto(cid: string) {

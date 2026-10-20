@@ -1,6 +1,6 @@
 // Home: a fresh room link is made in this browser as soon as the page opens (no network; the room
 // appears on the server with its first message). PRD FR-10.0.
-import { AGENT_PROMPT_LEAD, AGENT_PROMPT_STEPS, agentPrompt, encodeKey, inviteText, linkFor, newSecret, serverInfo } from "@lincor/core";
+import { AGENT_PROMPT_AFTER, AGENT_PROMPT_INTRO, AGENT_PROMPT_LEAD, agentPrompt, agentSetupCommand, encodeKey, inviteText, linkFor, newSecret, serverInfo } from "@lincor/core";
 import { $, copyText } from "./dom";
 import { forgetRecord, rememberedRooms, type Stores } from "./storage";
 import { escapeHtml } from "./view";
@@ -32,11 +32,16 @@ function renderCommands() {
   });
   const agentCli = document.getElementById("agentCli");
   if (agentCli) agentCli.textContent = cliCommand;
-  // A compact preview of the prompt (two lines, cut off); Copy prompt copies all of it.
-  const steps = AGENT_PROMPT_STEPS.join(" ");
+  renderPrompt();
+}
+
+/** A compact preview of the prompt: the lead, the setup command with the link, the rest cut to two lines. */
+function renderPrompt() {
+  $("promptLink").textContent = fresh ? agentSetupCommand(linkOf(fresh.key), cliCommand) : "";
+  const rest = [AGENT_PROMPT_INTRO, ...AGENT_PROMPT_AFTER].join(" ");
   const preview = $("promptSteps");
-  preview.textContent = steps;
-  preview.title = steps;
+  preview.textContent = rest;
+  preview.title = rest;
 }
 
 async function loadServerInfo() {
@@ -68,7 +73,7 @@ function showLink(link: string) {
   const part = (cls: string, text: string) => Object.assign(document.createElement("span"), { className: cls, textContent: text });
   el.replaceChildren(part("url__route", link.slice(0, at)), part("url__hash", "#"), part("url__key", link.slice(at + 1)));
   el.title = link;
-  $("promptLink").textContent = link;
+  renderPrompt();
 }
 
 /** Makes a new link locally and shows it. */
@@ -122,8 +127,8 @@ export function initHome(h: HomeHooks) {
     $("badLink").hidden = true;
   });
   $("copyLinkHome").addEventListener("click", (e) => fresh && copyText(linkOf(fresh.key), e.currentTarget as HTMLElement));
-  $("copyInviteHome").addEventListener("click", (e) => fresh && copyText(inviteText(linkOf(fresh.key)), e.currentTarget as HTMLElement));
-  $("copyPromptHome").addEventListener("click", (e) => fresh && copyText(agentPrompt(linkOf(fresh.key)), e.currentTarget as HTMLElement));
+  $("copyInviteHome").addEventListener("click", (e) => fresh && copyText(inviteText(linkOf(fresh.key), cliCommand), e.currentTarget as HTMLElement));
+  $("copyPromptHome").addEventListener("click", (e) => fresh && copyText(agentPrompt(linkOf(fresh.key), cliCommand), e.currentTarget as HTMLElement));
   $("openRoom").addEventListener("click", () => {
     if (!fresh) return;
     const { key, secret } = fresh;

@@ -261,15 +261,18 @@ describe("handles", () => {
 });
 
 describe("invite and agent prompt", () => {
-  it("are the user's own words with the approvals given up front, and the exact CLI to run", () => {
+  it("are the user's words with one setup command, and say what to do when permissions block it", () => {
     const link = "https://agents-room.cc/r#3uS21qWxeAVCuP4FSm1RK2TEipYwnKh6zbbUKED9XDPoXVKPpB";
-    const prompt = agentPrompt(link);
-    const lines = prompt.split("\n");
-    expect(lines[0]).toBe(`Set up Agents secure chat in this session and keep it connected to this room: ${link}`);
-    expect(prompt).toContain("3. Keep listening in the background");
-    expect(lines.at(-1)).toContain("ask me before changing code or sharing files.");
-    expect(prompt.split(link)).toHaveLength(2);
-    expect(inviteText(link)).toBe(`Paste this whole message into Claude Code or Codex:\n\n${prompt}`);
+    const prompt = agentPrompt(link, "npx -y agents-room@1.2.3");
+    expect(prompt.split("\n")).toEqual([
+      "Connect this session to my team's Agents secure chat room and keep it listening.",
+      "Run this from this project's folder; it joins the room and sets up background listening:",
+      `npx -y agents-room@1.2.3 setup '${link}'`,
+      "Then tell me who is there and what is addressed to us, and keep handling what is addressed to you. Ask me before changing code or sharing files.",
+      "If your permissions block the command, don't work around them: give me the exact command to run myself (in Claude Code: ! <command>) and tell me what to allow so it works next time.",
+    ]);
+    expect(inviteText(link, "npx -y agents-room@1.2.3")).toBe(`Paste this whole message into Claude Code or Codex:\n\n${prompt}`);
+    expect(agentPrompt(link)).toContain(`npx -y agents-room setup '${link}'`);
   });
 });
 

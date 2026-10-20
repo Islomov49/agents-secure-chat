@@ -4,7 +4,7 @@ import { Lincor, UserError, type Result } from "./service.js";
 import { runMcpServer } from "./mcp.js";
 import { runHook } from "./hooks.js";
 import { runWatch } from "./watch.js";
-import { install, uninstall } from "./install.js";
+import { install, setupIntegration, uninstall } from "./install.js";
 import { rulesText } from "./rules.js";
 import { VERSION } from "./version.js";
 
@@ -13,6 +13,7 @@ const HELP = `agents-room ${VERSION}: end-to-end encrypted group chat rooms for 
 Rooms
   agents-room create [--name <name>] [--about <text>] [--server <url>]   create a room on this machine (no network until the first post)
   agents-room about ["<what this room is for>" | -]      read or write the room's About (everyone reads it on join)
+  agents-room setup '<link>'                             join, and install the integration so new sessions listen too
   agents-room join '<link>' [--role <role>] [--name <name>] [--status <text>] [--no-intro]
   agents-room brief                                      who is here, tasks for you, recent messages
   agents-room rooms | use <room> | link | rename <name> | leave
@@ -132,6 +133,13 @@ async function run(argv: string[]): Promise<Result | undefined> {
     case "join":
       if (!p[0]) throw new UserError("Usage: agents-room join '<link>' (the full link, including the part after #)");
       return lincor.join(p.join(""), { name: o.name, role: o.role, owner: o.owner, project: o.project, repo: o.repo, stack: o.stack, status: o.status }, { intro: !o["no-intro"] });
+    case "setup": {
+      // One command for a pasted invite: join, then install the integration so new sessions listen too.
+      if (!p[0]) throw new UserError("Usage: agents-room setup '<link>' (the full link, including the part after #)");
+      const joined = await lincor.join(p.join(""), { name: o.name, role: o.role, owner: o.owner, project: o.project, repo: o.repo, stack: o.stack, status: o.status }, { integrationHint: false });
+      const client = (joined.data as { client?: string }).client;
+      return { text: `${joined.text}\n\n${await setupIntegration(client)}`, data: joined.data };
+    }
     case "brief":
       return lincor.brief(room);
     case "profile":

@@ -257,6 +257,31 @@ describe("lincor service", () => {
     expect((await mk.lincor().read()).text).toMatch(/★ .*@Mukhammad what are you working on\?/);
   });
 
+  it("setup joins and installs the integration for the agent's client in one command", async () => {
+    const owner = dev("setup-owner");
+    const { link, invite } = owner.lincor().create({ about: "Setup" }).data as { link: string; invite: string };
+    expect(invite).toContain(`setup '${link}'`);
+    await owner.lincor().send("hi");
+    const agent = dev("setup-agent", { "ProjectSettings/ProjectVersion.txt": "m_EditorVersion: 6000.0.23f1\n" });
+    const fake = join(root, "setup-fake-claude");
+    const calls = join(root, "setup-claude-calls.txt");
+    writeFileSync(fake, `#!/bin/sh\necho "$@" >> '${calls}'\n`, { mode: 0o755 });
+    const out = await new Promise<{ code: number | null; out: string }>((resolve) => {
+      const p = spawn("node", [BUNDLE, "setup", link], { cwd: agent.project, env: { ...agent.env, LINCOR_CLIENT: "claude-code", LINCOR_CLAUDE_BIN: fake } as NodeJS.ProcessEnv });
+      let text = "";
+      p.stdout.on("data", (d: Buffer) => (text += d));
+      p.stderr.on("data", (d: Buffer) => (text += d));
+      p.on("exit", (code) => resolve({ code, out: text }));
+    });
+    expect(out.code, out.out).toBe(0);
+    expect(out.out).toContain("You joined Agents secure chat room");
+    expect(out.out).toContain("- Listen: start `");
+    expect(out.out).toContain("Integration: Installed the Agents secure chat plugin for Claude Code");
+    expect(out.out).not.toContain("Optional, ask your user first");
+    expect(readFileSync(calls, "utf8")).toContain("plugin install agents-room@agents-room --scope user");
+    expect((await owner.lincor().who()).text).toContain("[unity]");
+  });
+
   it("keeps the name and role given to join --no-intro for the first post (regression)", async () => {
     const owner = dev("nointro-owner");
     const { link } = owner.lincor().create().data as { link: string };
@@ -425,6 +450,8 @@ describe("MCP server", () => {
 
     const text = (r: unknown) => ((r as { content: { text: string }[] }).content[0].text);
     expect(feClient.getInstructions()).toContain("chat_about");
+    expect(feClient.getInstructions()).toContain('"share / send / upload these files": chat_file_share {paths}');
+    expect(feClient.getInstructions()).toContain("in Claude Code: ! <command>");
     const noAbout = await feClient.callTool({ name: "chat_create_room", arguments: { name: "MCP room" } });
     expect(noAbout.isError).toBe(true);
     const created = text(await feClient.callTool({ name: "chat_create_room", arguments: { name: "MCP room", about: "MCP test room: ship it." } }));

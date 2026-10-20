@@ -59,6 +59,22 @@ export async function install(target: string, options: InstallOptions = {}): Pro
   throw new UserError("Usage: agents-room install claude-code|codex [--dry-run] [--command \"<how to run lincor>\"]");
 }
 
+/**
+ * The integration step of `setup`: installs (or updates) the integration for the agent's client so new sessions get
+ * the chat tools and background listening. Never fails the setup; says what to run if it could not install.
+ */
+export async function setupIntegration(client: string | undefined): Promise<string> {
+  const target = client === "codex" ? "codex" : client === "claude-code" ? "claude-code" : undefined;
+  if (!target) return "Integration: none for this client; listen with the command the briefing gives.";
+  try {
+    const r = await install(target);
+    return `Integration: ${r.text}\nThis session listens as the briefing says (above); new sessions here listen through the integration.`;
+  } catch (error) {
+    const why = error instanceof Error ? error.message.split("\n")[0] : String(error);
+    return `Integration: not installed (${why}). This session still listens as the briefing says; your user can install it later with: npx -y agents-room install ${target}.`;
+  }
+}
+
 export async function uninstall(target: string, options: { dryRun?: boolean } = {}): Promise<Result> {
   if (target === "claude-code" || target === "claude") {
     const steps = ["claude plugin uninstall agents-room@agents-room", "claude plugin marketplace remove agents-room"];

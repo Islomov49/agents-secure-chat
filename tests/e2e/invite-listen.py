@@ -65,6 +65,8 @@ def run_setup(mode, base, tmp, clean):
 
     def lincor(*argv):
         env = {**clean, "LINCOR_HOME": fe_home, "LINCOR_SERVER": base, "LINCOR_OWNER": "ali", "LINCOR_CLIENT": "cli"}
+        if not os.environ.get("LINCOR_E2E_URL"):
+            env["LINCOR_CLI_COMMAND"] = f"node {CLI}"  # the invite's setup command runs the local build
         return subprocess.run(["node", CLI, *argv], cwd=fe_dir, env=env, capture_output=True, text=True, check=True).stdout
 
     created = json.loads(lincor("create", "--name", "Checkout v2", "--about", "Checkout v2: the web app and the Unity client agree on purchase events.", "--json"))["data"]
@@ -142,7 +144,32 @@ def run_setup(mode, base, tmp, clean):
         start = time.time()
         while time.time() - start < 240 and not joined():
             pump(2)
-        if not check("the pasted invite makes it join the room", joined(), f"joined after {time.time() - start:.0f}s" if joined() else f"did not join within 240s; who: {lincor('who').strip()!r}"):
+            if time.time() - last_output[0] > 25 and time.time() - start > 40:
+                break  # the first turn ended without joining
+        if not joined():
+            # Permissions blocked the setup command. The invite tells the agent to hand it to the user instead of
+            # working around it; do what a person would: run the command it gave with `!`, then say done.
+            flat = re.sub(r"\s+", "", screen[0])
+            setup_cmd = next(line for line in invite.splitlines() if " setup '" in line)
+            handed = "!" in flat and re.sub(r"\s+", "", setup_cmd)[:40] in flat
+            check("blocked by permissions, it hands the user the exact command instead of working around it", handed, "it gave the ! command" if handed else "no command for the user")
+            if not handed:
+                return results
+            os.write(fd, b"\x1b")  # close a "Teach auto mode" dialog if one is open
+            pump(2)
+            os.write(fd, b"!")
+            time.sleep(0.5)
+            os.write(fd, setup_cmd.encode())
+            time.sleep(0.5)
+            os.write(fd, b"\r")
+            ran = time.time()
+            while time.time() - ran < 120 and not joined():
+                pump(2)
+            quiet(5, 30)
+            os.write(fd, b"done, carry on")
+            time.sleep(0.5)
+            os.write(fd, b"\r")
+        if not check("the pasted invite makes it join the room", joined(), f"joined after {time.time() - start:.0f}s" if joined() else f"did not join; who: {lincor('who').strip()!r}"):
             return results
         quiet(20, 240)  # the first turn ends: it reported and (zero install) started listening in the background
         pump(5)
@@ -210,9 +237,9 @@ def main():
         if server:
             server.terminate()
     passed = sum(r["ok"] for r in results)
-    expected = 3 * len(modes)
-    print(f"{passed}/{expected} invite-listen checks passed; transcripts: {tmp}/<setup>/screen.txt", flush=True)
-    sys.exit(0 if passed == len(results) == expected else 1)
+    expected = len(results) if all(r["ok"] for r in results) and len(results) >= 3 * len(modes) else 3 * len(modes)
+    print(f"{passed}/{len(results)} invite-listen checks passed; transcripts: {tmp}/<setup>/screen.txt", flush=True)
+    sys.exit(0 if passed == len(results) and len(results) >= 3 * len(modes) else 1)
 
 
 if __name__ == "__main__":

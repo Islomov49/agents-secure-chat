@@ -34,7 +34,7 @@ import { autoProfile, mergeProfile, projectDirFor, type ProfileOverrides } from 
 import { briefing, formatAbout, formatEvent, formatPeople, formatTask, shortCid, type Surface } from "./format.js";
 import { rulesText } from "./rules.js";
 import { Store, lincorHome, type Autonomy, type ListenMode, type MemberRecord, type RoomRecord } from "./store.js";
-import { selfCommand } from "./version.js";
+import { cliCommand, selfCommand } from "./version.js";
 
 /** "About this room" stays short: it is read on every join and session start. Long material goes in a contract. */
 export const ABOUT_MAX = 2000;
@@ -308,15 +308,15 @@ export class Lincor {
         link,
         "",
         `Invite text for your user to forward:`,
-        inviteText(link),
+        inviteText(link, cliCommand(this.env)),
         "",
         next,
       ].join("\n"),
-      data: { roomId, link, invite: inviteText(link) },
+      data: { roomId, link, invite: inviteText(link, cliCommand(this.env)) },
     };
   }
 
-  async join(linkText: string, overrides: ProfileOverrides = {}, options: { intro?: boolean } = {}): Promise<Result> {
+  async join(linkText: string, overrides: ProfileOverrides = {}, options: { intro?: boolean; integrationHint?: boolean } = {}): Promise<Result> {
     let parsed;
     try {
       parsed = parseLink(linkText, this.env.LINCOR_SERVER ?? DEFAULT_ORIGIN);
@@ -357,7 +357,8 @@ export class Lincor {
       options.intro === false
         ? `\n\nYou have not introduced yourself yet: ${this.cmd("agents-room profile --role … --name …", "chat_profile")}.`
         : `\n\nYour profile was filled from this repository: ${profile.name} [${profile.role}]${profile.stack ? `, ${profile.stack}` : ""}. Fix it if wrong: ${this.cmd('agents-room profile --role <role> --name "<name>" --status "<what you do>"', "chat_profile")}.`;
-    return { text: text + rules + extra + this.integrationHint(profile.client), data: { roomId, participantId: o.session.identity.id } };
+    const hint = options.integrationHint === false ? "" : this.integrationHint(profile.client);
+    return { text: text + rules + extra + hint, data: { roomId, participantId: o.session.identity.id, client: profile.client } };
   }
 
   /** What the briefing needs to say how this agent listens (its surface, client and whether hooks are installed). */
@@ -479,7 +480,7 @@ export class Lincor {
     this.markRead(o);
     const link = linkFor(o.room.origin, o.room.key);
     return {
-      text: `Created task ${shortCid(event.cid)} "${task.title}"${assignee ? ` for ${assignee}` : ""}.\nIf the assignee is not in the room yet, give your user this invite to forward:\n${inviteText(link)}${this.aboutNudge(o, first)}`,
+      text: `Created task ${shortCid(event.cid)} "${task.title}"${assignee ? ` for ${assignee}` : ""}.\nIf the assignee is not in the room yet, give your user this invite to forward:\n${inviteText(link, cliCommand(this.env))}${this.aboutNudge(o, first)}`,
       data: { task: event.cid, link },
     };
   }
@@ -645,7 +646,7 @@ export class Lincor {
   link(selector?: string): Result {
     const room = this.resolveRoom(selector);
     const link = linkFor(room.origin, room.key);
-    return { text: `${link}\n\nInvite text:\n${inviteText(link)}`, data: { link } };
+    return { text: `${link}\n\nInvite text:\n${inviteText(link, cliCommand(this.env))}`, data: { link } };
   }
 
   async leave(selector?: string): Promise<Result> {
