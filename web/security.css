@@ -1,0 +1,106 @@
+/* /security: why the server can't read a room. Builds on styles.css tokens (Terminal design). */
+.sec {
+  min-height: 100dvh; display: flex; flex-direction: column;
+  background-color: var(--ground);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+.sec .brand { text-decoration: none; }
+.sec__main {
+  flex: 1; width: 100%; max-width: 1120px; margin: 0 auto;
+  padding: 64px 32px 56px; display: flex; flex-direction: column; gap: 48px; min-width: 0;
+}
+.sec__hero { display: flex; flex-direction: column; gap: 20px; }
+.sec__hero h1 { margin: 0; font-size: clamp(2.4rem, 1.6rem + 3.6vw, 3.6rem); line-height: 1.04; font-weight: 600; letter-spacing: -0.03em; text-wrap: balance; }
+.sec__h2 { margin: 0 0 8px; font-size: 24px; font-weight: 600; letter-spacing: -0.01em; }
+.sec__p { margin: 0; max-width: 720px; font-size: 16px; line-height: 1.6; color: var(--dim); }
+.sec .panel { flex: none; }
+.sec .panel__head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel-head); font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dim); }
+
+/* ---- the isometric flow ---- */
+.flow__scroll { overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.flow__scroll:focus-visible { outline-offset: -2px; }
+.flow { display: block; width: 100%; height: auto; padding: 8px 8px 0; }
+.slab__top { fill: url(#slabTop); stroke: var(--accent-line); stroke-width: 1.2; }
+.slab__left { fill: #0E1311; stroke: var(--accent-line); stroke-width: 1.2; }
+.slab__right { fill: #0B0F0D; stroke: var(--accent-line); stroke-width: 1.2; }
+.slab--server .slab__top { fill: url(#slabTopServer); stroke: var(--line-strong); }
+.slab--server .slab__left, .slab--server .slab__right { stroke: var(--line-strong); }
+.slab__title { font-family: var(--mono); font-size: 15px; font-weight: 600; fill: var(--text); }
+.slab__note { font-family: var(--mono); font-size: 12px; fill: var(--faint); }
+.slab__glyph rect, .slab__glyph path, .slab__glyph ellipse { fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linecap: round; }
+.slab__glyph--db ellipse, .slab__glyph--db path { stroke: var(--dim); }
+.flow__wire { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 2 7; stroke-linecap: round; opacity: 0.8; }
+.flow__key-line { fill: none; stroke: var(--amber); stroke-width: 1.6; stroke-dasharray: 6 6; opacity: 0.85; }
+.flow__key-label { font-family: var(--mono); font-size: 14px; fill: var(--amber); }
+.flow__key-sub { font-family: var(--mono); font-size: 12px; fill: var(--faint); }
+.flow__packet rect { fill: var(--accent-bg); stroke: var(--accent); stroke-width: 1.6; }
+.flow__packet path { fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linecap: round; }
+.flow__keytoken circle { fill: var(--amber-bg); stroke: var(--amber); stroke-width: 1.6; }
+.flow__keytoken path { fill: none; stroke: var(--amber); stroke-width: 1.6; stroke-linecap: round; }
+.flow__steps { margin: 0; padding: 4px 20px 18px; list-style: none; counter-reset: step; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 28px; font-size: 14px; line-height: 1.55; color: var(--dim); }
+.flow__steps li { display: grid; grid-template-columns: 1.8em minmax(0, 1fr); counter-increment: step; }
+.flow__steps li::before { content: counter(step) "."; font-family: var(--mono); color: var(--accent); }
+
+/* ---- live demo ---- */
+.demo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 0; }
+.demo__side { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px; min-width: 0; }
+.demo__side + .demo__side { border-left: 1px solid var(--line); }
+.demo textarea { min-height: 7.5em; resize: vertical; font-size: 15px; line-height: 1.5; }
+.demo__hint { margin: 0; font-size: 13px; color: var(--faint); overflow-wrap: anywhere; }
+.demo__hint code { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+.demo__label { margin: 0; font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dim); }
+.demo__label code { margin-left: 6px; padding: 1px 6px; border: 1px solid var(--line-strong); border-radius: var(--r-small); text-transform: none; letter-spacing: 0; color: var(--text); }
+.row { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 14px; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; }
+.row dt { color: var(--faint); }
+.row dd { margin: 0; color: var(--text); overflow-wrap: anywhere; }
+.row dd.row__data { color: var(--cyan); max-height: 9.5em; overflow: hidden; -webkit-mask-image: linear-gradient(#000 70%, transparent); mask-image: linear-gradient(#000 70%, transparent); }
+.row dd.is-fresh { animation: fresh 0.6s ease-out; }
+@keyframes fresh { from { color: var(--accent-hover); } }
+.demo__open { display: grid; gap: 8px; padding: 14px 20px 18px; border-top: 1px solid var(--line); }
+.demo__open-row { display: grid; grid-template-columns: minmax(170px, max-content) minmax(0, 1fr); gap: 12px; align-items: baseline; }
+.demo__who { font-family: var(--mono); font-size: 12px; color: var(--faint); }
+.demo__ok { color: var(--text); overflow-wrap: anywhere; }
+.demo__ok::before { content: "✓ "; font-family: var(--mono); color: var(--accent); }
+.demo__fail { font-family: var(--mono); font-size: 13px; color: var(--amber); }
+.demo__fail::before { content: "✕ "; }
+
+/* ---- database tables ---- */
+.tables { margin-top: 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.table { border: 1px solid var(--line); border-radius: var(--r-block); background: var(--panel); padding: 14px 16px; }
+.table h3 { margin: 0 0 10px; font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--accent); }
+.table h3::before { content: "table "; color: var(--faint); font-weight: 400; }
+.table ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.table li { display: grid; gap: 2px; }
+.table code { font-family: var(--mono); font-size: 12.5px; color: var(--text); }
+.table span { font-size: 13px; line-height: 1.45; color: var(--dim); }
+.table__note { margin: 10px 0 0; font-size: 13px; line-height: 1.45; color: var(--faint); }
+
+/* ---- limits ---- */
+.limits { margin-top: 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.limits__col { border: 1px solid var(--line); border-radius: var(--r-block); background: var(--panel); padding: 16px 18px; }
+.limits__col h3 { margin: 0 0 10px; font-family: var(--mono); font-size: 13px; font-weight: 500; letter-spacing: 0.04em; }
+.limits__col--no h3 { color: var(--accent); }
+.limits__col--yes h3 { color: var(--amber); }
+.limits ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; font-size: 15px; line-height: 1.5; color: var(--text); }
+.limits li { display: grid; grid-template-columns: 1.4em minmax(0, 1fr); }
+.limits__col--no li::before { content: "✕"; font-family: var(--mono); color: var(--accent); }
+.limits__col--yes li::before { content: "·"; font-family: var(--mono); color: var(--amber); }
+.limits__note { margin: 12px 0 0; font-size: 13px; line-height: 1.5; color: var(--faint); }
+
+/* ---- tech ---- */
+.tech { margin: 16px 0; display: grid; gap: 10px; }
+.tech div { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 12px; }
+.tech dt { font-family: var(--mono); font-size: 13px; color: var(--faint); }
+.tech dd { margin: 0; font-size: 15px; line-height: 1.5; color: var(--dim); }
+.tech code { font-family: var(--mono); font-size: 13px; color: var(--text); }
+.sec__foot a { font-size: 12px; }
+
+@media (max-width: 760px) {
+  .sec__main { padding: 40px 16px 40px; gap: 36px; }
+  .flow { min-width: 680px; }
+  .demo { grid-template-columns: minmax(0, 1fr); }
+  .demo__side + .demo__side { border-left: 0; border-top: 1px solid var(--line); }
+  .demo__open-row { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .tech div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+}

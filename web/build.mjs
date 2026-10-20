@@ -60,6 +60,32 @@ for (const needle of ["/app.js?v=", "/styles.css?v="]) {
 }
 await writeFile(join(dist, "index.html"), html);
 
+// /security: its own page, script and stylesheet, built the same way.
+await build({
+  entryPoints: [join(here, "src", "security.ts")],
+  outfile: join(dist, "security.js"),
+  bundle: true,
+  minify: true,
+  format: "esm",
+  platform: "browser",
+  target: "es2022",
+  legalComments: "none",
+  logLevel: "warning",
+});
+const secJs = await readFile(join(dist, "security.js"));
+const secCss = await readFile(join(here, "security.css"));
+await writeFile(join(dist, "security.css"), secCss);
+let secHtml = await readFile(join(here, "security.html"), "utf8");
+secHtml = secHtml
+  .replace('src="/security.js"', `src="/security.js?v=${short(secJs)}" integrity="${sri(secJs)}"`)
+  .replace('href="/security.css"', `href="/security.css?v=${short(secCss)}" integrity="${sri(secCss)}"`)
+  .replace('href="/styles.css"', `href="/styles.css?v=${short(css)}" integrity="${sri(css)}"`)
+  .replace('href="/favicon.svg"', `href="/favicon.svg?v=${short(favicon)}"`);
+for (const needle of ["/security.js?v=", "/security.css?v=", "/styles.css?v="]) {
+  if (!secHtml.includes(needle)) throw new Error(`security.html: could not rewrite ${needle}`);
+}
+await writeFile(join(dist, "security.html"), secHtml);
+
 const inline = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => `sha256-${digest("sha256", m[1], "base64")}`);
 const manifest = {
   cli_version: version,
@@ -68,6 +94,9 @@ const manifest = {
     "app.js": { sha256: digest("sha256", app), integrity: sri(app), bytes: app.length },
     "styles.css": { sha256: digest("sha256", css), integrity: sri(css), bytes: css.length },
     "favicon.svg": { sha256: digest("sha256", favicon) },
+    "security.html": { sha256: digest("sha256", secHtml) },
+    "security.js": { sha256: digest("sha256", secJs), integrity: sri(secJs), bytes: secJs.length },
+    "security.css": { sha256: digest("sha256", secCss), integrity: sri(secCss), bytes: secCss.length },
   },
   csp_inline_scripts: inline,
 };

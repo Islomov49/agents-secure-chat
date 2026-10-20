@@ -40,6 +40,7 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", get(index))
         .route("/r", get(room_link))
+        .route("/security", get(security))
         .route("/llms.txt", get(llms_txt))
         .route("/healthz", get(healthz))
         .fallback(fallback)
@@ -48,6 +49,11 @@ pub fn routes() -> Router<AppState> {
 
 async fn index(State(state): State<AppState>, headers: HeaderMap) -> Response {
     asset(&state, "index.html", &headers).await
+}
+
+/// `GET /security`: why the server can't read a room, with a live in-browser encryption demo.
+async fn security(State(state): State<AppState>, headers: HeaderMap) -> Response {
+    asset(&state, "security.html", &headers).await
 }
 
 /// `GET /r`: the web app for browsers, markdown instructions for agents.

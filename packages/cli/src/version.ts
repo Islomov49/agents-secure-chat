@@ -4,7 +4,7 @@ import { delimiter, join } from "node:path";
 declare const __LINCOR_VERSION__: string | undefined;
 
 /** Replaced at build time by esbuild; falls back for tests run from source. */
-export const VERSION: string = typeof __LINCOR_VERSION__ === "string" ? __LINCOR_VERSION__ : "0.2.2";
+export const VERSION: string = typeof __LINCOR_VERSION__ === "string" ? __LINCOR_VERSION__ : "0.2.3";
 
 export const PACKAGE = "agents-room";
 

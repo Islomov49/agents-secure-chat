@@ -325,6 +325,13 @@ async function main() {
     }
   });
 
+  if (!args.has("--no-web")) await check("security page: live encryption demo, nothing sent while typing, no sideways scroll", async () => {
+    const page = await fetch(`${base}/security`, { signal: AbortSignal.timeout(10_000) });
+    assert(page.ok, `GET /security: ${page.status}`);
+    const out = sh("node", [join(repo, "web/test/security-shots.mjs"), base, tmp], { timeout: 120_000 });
+    return out.trim().split("\n").join(", ");
+  });
+
   if (args.has("--agents")) await liveAgents(base);
 
   const failed = results.filter((r) => !r.ok);
