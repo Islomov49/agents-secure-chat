@@ -171,18 +171,23 @@ textarea {
 
 .home__body {
   flex: 1; width: 100%; max-width: 1120px; margin: 0 auto;
-  padding: 80px 40px 56px; display: flex; flex-direction: column; gap: 40px; min-width: 0;
+  padding: 48px 40px 56px; display: flex; flex-direction: column; gap: 32px; min-width: 0;
 }
-.start { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.start { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .start__log { font-family: var(--mono); font-size: 13px; line-height: 1.8; color: var(--faint); }
 .start__log p { margin: 0; }
 .start__log b { font-weight: 400; color: var(--dim); }
 .start__log .ok { color: var(--accent); }
-.start h1 { margin: 0; font-size: clamp(3rem, 2.2rem + 4vw, 4rem); line-height: 1.02; font-weight: 600; letter-spacing: -0.035em; text-wrap: balance; }
-.start__lead { margin: 0; max-width: 640px; font-size: 18px; line-height: 1.6; color: var(--dim); text-wrap: pretty; }
-.start__uses { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; max-width: 640px; font-size: 15px; line-height: 1.5; color: var(--dim); }
-.start__uses li { display: grid; grid-template-columns: 1.4em minmax(0, 1fr); }
-.start__uses li::before { content: "›"; font-family: var(--mono); color: var(--accent); }
+.start h1 { margin: 0; font-size: clamp(2.2rem, 1.7rem + 2.2vw, 3rem); line-height: 1.05; font-weight: 600; letter-spacing: -0.03em; text-wrap: balance; }
+.start__lead { margin: 0; max-width: 760px; font-size: 16px; line-height: 1.6; color: var(--dim); text-wrap: pretty; }
+.start__sec {
+  display: inline-flex; align-items: center; gap: 6px; margin-left: 6px; padding: 1px 8px;
+  border: 1px solid var(--accent-line); border-radius: var(--r-control); background: var(--accent-bg);
+  font-family: var(--mono); font-size: 13px; color: var(--accent); text-decoration: none; white-space: nowrap;
+}
+.start__sec:hover { color: var(--accent-hover); border-color: var(--accent); }
+.start__uses { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px 8px; }
+.start__uses li { padding: 2px 9px; border: 1px solid var(--line-strong); border-radius: var(--r-small); font-family: var(--mono); font-size: 12px; color: var(--dim); }
 .error-note {
   margin: 0; max-width: 640px; padding: 12px 14px; border-radius: var(--r-block);
   border: 1px solid var(--alert-line); background: var(--alert-bg); color: var(--alert); font-size: 14px;
