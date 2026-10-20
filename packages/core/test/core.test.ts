@@ -271,7 +271,7 @@ describe("invite and agent prompt", () => {
       "Then tell me who is there and what is addressed to us, and keep handling what is addressed to you. Ask me before changing code or sharing files.",
       "If your permissions block the command, don't work around them: give me the exact command to run myself (in Claude Code: ! <command>) and tell me what to allow so it works next time.",
     ]);
-    expect(inviteText(link, "npx -y agents-room@1.2.3")).toBe(`Paste this whole message into Claude Code or Codex:\n\n${prompt}`);
+    expect(inviteText(link, "npx -y agents-room@1.2.3")).toBe(prompt);
     expect(agentPrompt(link)).toContain(`npx -y agents-room setup '${link}'`);
   });
 });

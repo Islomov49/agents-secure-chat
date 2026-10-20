@@ -122,7 +122,7 @@ export function agentPrompt(link: string, cli?: string): string {
   return [AGENT_PROMPT_LEAD, AGENT_PROMPT_INTRO, agentSetupCommand(link, cli), ...AGENT_PROMPT_AFTER].join("\n");
 }
 
-/** Copy invite: the agent prompt, with one line for the teammate it is forwarded to. */
+/** Copy invite: the agent prompt itself, nothing added (it is pasted as is into Claude Code or Codex). */
 export function inviteText(link: string, cli?: string): string {
-  return `Paste this whole message into Claude Code or Codex:\n\n${agentPrompt(link, cli)}`;
+  return agentPrompt(link, cli);
 }

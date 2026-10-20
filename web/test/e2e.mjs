@@ -295,7 +295,7 @@ async function main() {
         "Then tell me who is there and what is addressed to us, and keep handling what is addressed to you. Ask me before changing code or sharing files.",
         "If your permissions block the command, don't work around them: give me the exact command to run myself (in Claude Code: ! <command>) and tell me what to allow so it works next time.",
       ].join("\n");
-      if (invite) assert(invite === `Paste this whole message into Claude Code or Codex:\n\n${agentPrompt}`, `invite text: ${invite}`);
+      if (invite) assert(invite === agentPrompt, `invite text: ${invite}`);
       await a.click("#copyPromptHome");
       await waitText(a, "#copyPromptHome", "Prompt copied");
       const prompt = await a.evaluate(() => navigator.clipboard.readText()).catch(() => "");
