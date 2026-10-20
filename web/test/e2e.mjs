@@ -266,9 +266,8 @@ async function main() {
       const parts = await a.evaluate(() => ({
         key: document.querySelector("#linkText .url__key")?.textContent,
         hash: document.querySelector("#linkText .url__hash")?.textContent,
-        prompt: document.getElementById("promptLink")?.textContent,
       }));
-      assert(parts.key === key && parts.hash === "#" && parts.prompt.endsWith(` setup '${shown}'`), `link parts and agent prompt: ${JSON.stringify(parts)}`);
+      assert(parts.key === key && parts.hash === "#", `link parts: ${JSON.stringify(parts)}`);
       assert(roomRequests.length === 0, `no room requests yet: ${roomRequests.join(", ")}`);
       await waitText(a, ".warning", "can recover it");
       await a.click("#newLink");
@@ -301,9 +300,9 @@ async function main() {
       await waitText(a, "#copyPromptHome", "Prompt copied");
       const prompt = await a.evaluate(() => navigator.clipboard.readText()).catch(() => "");
       if (prompt) assert(prompt === agentPrompt, `agent prompt: ${prompt}`);
-      // What the panel shows is what gets copied.
-      const shown = await a.$eval(".term", (t) => t.textContent);
-      for (const line of agentPrompt.split("\n").slice(1).filter(Boolean)) assert(shown.includes(line), `prompt panel shows: ${line}`);
+      // The panel explains what the prompt does instead of showing a piece of it.
+      const explained = await a.$eval(".agentcard", (t) => t.textContent);
+      assert(explained.includes("setup") && explained.includes("listening"), `connect panel: ${explained}`);
     });
 
     await step("Open room, write the first message: URL loses the fragment, nothing is sent before the name", async () => {

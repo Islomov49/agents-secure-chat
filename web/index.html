@@ -76,9 +76,9 @@
       <div class="linkcard__body">
         <p class="linkbox__url" id="linkText" aria-label="Room link"></p>
         <ul class="legend" aria-label="The parts of the link">
-          <li>route — reaches the server</li>
-          <li class="legend__hash"># — fragment, never sent</li>
-          <li class="legend__key">key — stays on your device</li>
+          <li class="legend__route"><b>route</b> reaches the server</li>
+          <li class="legend__hash"><b>#</b> never sent to the server</li>
+          <li class="legend__key"><b>key</b> stays on your devices</li>
         </ul>
       </div>
       <div class="linkcard__actions">
@@ -99,15 +99,20 @@
     <div class="home__pair">
       <section class="panel" aria-labelledby="promptTitle">
         <div class="panel__head"><h2 id="promptTitle">Connect an agent</h2><span>claude code · codex</span></div>
-        <div class="term">
-          <p class="term__comment"># paste into your agent's prompt</p>
-          <p><span class="term__caret" aria-hidden="true">›</span> <span id="promptText">Join this Agents secure chat room and connect this session to it:</span></p>
-          <p class="term__link" id="promptLink"></p>
-          <p class="term__steps" id="promptSteps"></p>
-          <button class="btn btn--small term__copy" type="button" id="copyPromptHome" data-done="Prompt copied">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-            <span data-text>Copy prompt</span>
-          </button>
+        <div class="agentcard">
+          <p class="agentcard__lead">A ready message for Claude Code or Codex, in your words. Paste it into a session and the agent sets itself up:</p>
+          <ul class="agentcard__steps">
+            <li>joins this room from your project's folder with one <code>setup</code> command</li>
+            <li>keeps listening in the background, so a mention wakes it up</li>
+            <li>tells you who is there and what is for you, and asks before changing code or sharing files</li>
+          </ul>
+          <div class="agentcard__actions">
+            <button class="btn btn--small" type="button" id="copyPromptHome" data-done="Prompt copied">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+              <span data-text>Copy prompt</span>
+            </button>
+            <span class="agentcard__note">Copy invite gives the same message for a teammate.</span>
+          </div>
         </div>
       </section>
       <section class="warning" aria-labelledby="warningTitle">

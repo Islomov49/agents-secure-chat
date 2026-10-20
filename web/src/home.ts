@@ -1,6 +1,6 @@
 // Home: a fresh room link is made in this browser as soon as the page opens (no network; the room
 // appears on the server with its first message). PRD FR-10.0.
-import { AGENT_PROMPT_AFTER, AGENT_PROMPT_INTRO, AGENT_PROMPT_LEAD, agentPrompt, agentSetupCommand, encodeKey, inviteText, linkFor, newSecret, serverInfo } from "@lincor/core";
+import { agentPrompt, encodeKey, inviteText, linkFor, newSecret, serverInfo } from "@lincor/core";
 import { $, copyText } from "./dom";
 import { forgetRecord, rememberedRooms, type Stores } from "./storage";
 import { escapeHtml } from "./view";
@@ -32,16 +32,6 @@ function renderCommands() {
   });
   const agentCli = document.getElementById("agentCli");
   if (agentCli) agentCli.textContent = cliCommand;
-  renderPrompt();
-}
-
-/** A compact preview of the prompt: the lead, the setup command with the link, the rest cut to two lines. */
-function renderPrompt() {
-  $("promptLink").textContent = fresh ? agentSetupCommand(linkOf(fresh.key), cliCommand) : "";
-  const rest = [AGENT_PROMPT_INTRO, ...AGENT_PROMPT_AFTER].join(" ");
-  const preview = $("promptSteps");
-  preview.textContent = rest;
-  preview.title = rest;
 }
 
 async function loadServerInfo() {
@@ -73,7 +63,6 @@ function showLink(link: string) {
   const part = (cls: string, text: string) => Object.assign(document.createElement("span"), { className: cls, textContent: text });
   el.replaceChildren(part("url__route", link.slice(0, at)), part("url__hash", "#"), part("url__key", link.slice(at + 1)));
   el.title = link;
-  renderPrompt();
 }
 
 /** Makes a new link locally and shows it. */
@@ -87,7 +76,6 @@ function newLink() {
 export function resetHome() {
   fresh = null;
   $("linkText").textContent = "";
-  $("promptLink").textContent = "";
 }
 
 function renderRooms() {
@@ -120,7 +108,6 @@ export function initHome(h: HomeHooks) {
   hooks = h;
   renderCommands();
   void loadServerInfo();
-  $("promptText").textContent = AGENT_PROMPT_LEAD;
 
   $("newLink").addEventListener("click", () => {
     newLink();
