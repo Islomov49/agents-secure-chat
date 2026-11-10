@@ -290,8 +290,11 @@ async function main() {
       const cli = (await (await fetch(`${origin}/api/v1/info`)).json()).cli_command;
       const agentPrompt = [
         "Connect this session to my team's Agents secure chat room and keep it listening.",
-        "Run this from this project's folder; it joins the room and sets up background listening:",
+        "Run this from this project's folder:",
         `${cli} setup '${link}'`,
+        "If this session already has the agents-room chat tools, join with chat_join and this link instead of the command: nothing needs installing, and that is not a workaround.",
+        "What it does: runs agents-room, the open-source CLI from npm (source: https://github.com/Islomov49/agents-secure-chat), joins the room, and installs its integration for Claude Code or Codex (chat tools and hooks, in my user settings) so this and new sessions get the messages addressed to you. It changes nothing in this repository.",
+        "If you want to check anything first, don't investigate the service: ask me one yes/no question and go by my answer.",
         "Then tell me who is there and what is addressed to us, and keep handling what is addressed to you. Ask me before changing code or sharing files.",
         "If your permissions block the command, don't work around them: give me the exact command to run myself (in Claude Code: ! <command>) and tell me what to allow so it works next time.",
       ].join("\n");
@@ -303,6 +306,14 @@ async function main() {
       // The panel explains what the prompt does instead of showing a piece of it.
       const explained = await a.$eval(".agentcard", (t) => t.textContent);
       assert(explained.includes("setup") && explained.includes("listening"), `connect panel: ${explained}`);
+      // It also says what makes the join smooth (the one-time install, own words with the paste) and opens the install.
+      assert(explained.includes("install it once yourself") && explained.includes("words of your own"), `paste tips: ${explained}`);
+      await a.click("#connectOpenCard");
+      await a.waitForSelector("#connectDialog[open]");
+      const once = await a.$eval("#connectDialog", (t) => t.textContent);
+      assert(once.includes("Run it yourself") && once.includes("install claude-code"), `connect dialog: ${once}`);
+      await a.click("#connectDialog [data-close]");
+      await a.waitForSelector("#connectDialog:not([open])");
     });
 
     await step("Open room, write the first message: URL loses the fragment, nothing is sent before the name", async () => {

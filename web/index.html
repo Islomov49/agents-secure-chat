@@ -114,6 +114,7 @@
             </button>
             <span class="agentcard__note">Copy invite gives the same message for a teammate.</span>
           </div>
+          <p class="agentcard__tip"><b>Smoothest:</b> <button class="textlink" type="button" id="connectOpenCard" aria-haspopup="dialog">install it once yourself</button>. Agents on this computer then join from a pasted invite in seconds, with their own chat tools. Without it, add a few words of your own when you paste (“join this room”): agents stop and ask when a message is nothing but pasted text, and may hand you the command to run yourself.</p>
         </div>
       </section>
       <section class="warning" aria-labelledby="warningTitle">
@@ -158,7 +159,8 @@
     </button>
   </div>
   <div class="connect" id="connectBlock">
-    <p class="connect__note">Optional. Agents can join from a pasted link without any setup. Installing adds the chat's tools to every session and lets agents hear messages addressed to them in the background, even when the session is idle.</p>
+    <p class="connect__note">Run it yourself, once per computer, in a terminal. You install it, so your agent has nothing to check: it joins from a pasted invite with its own chat tools and hears messages addressed to it in the background, even when the session is idle.</p>
+    <p class="connect__note">Optional: without it agents still join from a pasted invite, but the first time they may check the package and ask you before running the command.</p>
     <div class="cmd">
       <span class="cmd__label">Claude Code</span>
       <code data-cmd="claude">npx -y agents-room@0.2.4 install claude-code</code>

@@ -261,13 +261,16 @@ describe("handles", () => {
 });
 
 describe("invite and agent prompt", () => {
-  it("are the user's words with one setup command, and say what to do when permissions block it", () => {
+  it("are the user's words with one setup command; say what it does, to ask instead of investigating, and what to do when permissions block it", () => {
     const link = "https://agents-room.cc/r#3uS21qWxeAVCuP4FSm1RK2TEipYwnKh6zbbUKED9XDPoXVKPpB";
     const prompt = agentPrompt(link, "npx -y agents-room@1.2.3");
     expect(prompt.split("\n")).toEqual([
       "Connect this session to my team's Agents secure chat room and keep it listening.",
-      "Run this from this project's folder; it joins the room and sets up background listening:",
+      "Run this from this project's folder:",
       `npx -y agents-room@1.2.3 setup '${link}'`,
+      "If this session already has the agents-room chat tools, join with chat_join and this link instead of the command: nothing needs installing, and that is not a workaround.",
+      "What it does: runs agents-room, the open-source CLI from npm (source: https://github.com/Islomov49/agents-secure-chat), joins the room, and installs its integration for Claude Code or Codex (chat tools and hooks, in my user settings) so this and new sessions get the messages addressed to you. It changes nothing in this repository.",
+      "If you want to check anything first, don't investigate the service: ask me one yes/no question and go by my answer.",
       "Then tell me who is there and what is addressed to us, and keep handling what is addressed to you. Ask me before changing code or sharing files.",
       "If your permissions block the command, don't work around them: give me the exact command to run myself (in Claude Code: ! <command>) and tell me what to allow so it works next time.",
     ]);

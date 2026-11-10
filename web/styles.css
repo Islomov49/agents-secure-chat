@@ -229,6 +229,10 @@ textarea {
 .agentcard__steps code { font-family: var(--mono); font-size: 13px; color: var(--text); }
 .agentcard__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 4px; }
 .agentcard__note { font-size: 13px; color: var(--faint); }
+.agentcard__tip { margin: 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13px; line-height: 1.55; color: var(--dim); }
+.agentcard__tip b { font-weight: 600; color: var(--text); }
+.textlink { padding: 0; border: 0; background: none; font: inherit; color: var(--cyan); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.textlink:hover { color: var(--cyan-hover); }
 .term {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; align-items: start;
   padding: 18px 20px; font-family: var(--mono); font-size: 14px; line-height: 1.75;

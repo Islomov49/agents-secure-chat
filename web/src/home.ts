@@ -122,7 +122,7 @@ export function initHome(h: HomeHooks) {
     resetHome();
     hooks.openCreated(key, secret, "");
   });
-  $("connectOpen").addEventListener("click", () => ($("connectDialog") as HTMLDialogElement).showModal());
+  for (const id of ["connectOpen", "connectOpenCard"]) $(id).addEventListener("click", () => ($("connectDialog") as HTMLDialogElement).showModal());
   $("roomsOpen").addEventListener("click", () => {
     renderRooms();
     ($("roomsDialog") as HTMLDialogElement).showModal();

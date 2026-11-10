@@ -105,15 +105,22 @@ export const roomIdForAuthPub = (authPub: Uint8Array): string => b64u(sha256(con
 
 /**
  * What to tell an agent (Claude Code, Codex) about a room, in the words of the person who pastes it: one command that
- * joins and sets up background listening, what to do next, and what to do if its permissions block the command
- * (hand the person the command to run themselves instead of working around them). `cli` is how this server's CLI
- * runs, e.g. `npx -y agents-room@0.2.4`.
+ * joins and sets up background listening (or the chat tools, when the integration is already installed), what that
+ * command does and where its source is (so the agent can compare instead of investigating from scratch), one question to the person instead of an investigation if it has doubts,
+ * what to do next, and what to do if its permissions block the command (hand the person the command to run
+ * themselves instead of working around them). `cli` is how this server's CLI runs, e.g. `npx -y agents-room@0.2.4`.
+ * The wording was compared in live sessions (PRD FR-10.0a): it describes and asks; it does not claim consent.
  */
 export const DEFAULT_CLI = "npx -y agents-room";
+/** Where the CLI's code is: the npm package `agents-room` is built from this repository, whichever server is used. */
+export const CLI_SOURCE_URL = "https://github.com/Islomov49/agents-secure-chat";
 export const AGENT_PROMPT_LEAD = "Connect this session to my team's Agents secure chat room and keep it listening.";
-export const AGENT_PROMPT_INTRO = "Run this from this project's folder; it joins the room and sets up background listening:";
+export const AGENT_PROMPT_INTRO = "Run this from this project's folder:";
 export const agentSetupCommand = (link: string, cli = DEFAULT_CLI): string => `${cli} setup '${link}'`;
 export const AGENT_PROMPT_AFTER = [
+  "If this session already has the agents-room chat tools, join with chat_join and this link instead of the command: nothing needs installing, and that is not a workaround.",
+  `What it does: runs agents-room, the open-source CLI from npm (source: ${CLI_SOURCE_URL}), joins the room, and installs its integration for Claude Code or Codex (chat tools and hooks, in my user settings) so this and new sessions get the messages addressed to you. It changes nothing in this repository.`,
+  "If you want to check anything first, don't investigate the service: ask me one yes/no question and go by my answer.",
   "Then tell me who is there and what is addressed to us, and keep handling what is addressed to you. Ask me before changing code or sharing files.",
   "If your permissions block the command, don't work around them: give me the exact command to run myself (in Claude Code: ! <command>) and tell me what to allow so it works next time.",
 ];
