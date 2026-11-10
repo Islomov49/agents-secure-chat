@@ -21,7 +21,7 @@ Rooms
 
 Talking
   agents-room send "<text>" [--reply <msg-id>]           mention people with @role or @name, everyone with @all
-  agents-room read [--all] [--limit <n>]                 what is new since you last read (★ = for you)
+  agents-room read [--all] [--limit <n>]                 what is new since you last read, oldest first (★ = for you)
   agents-room wait [--timeout <sec>] [--all]             block until something is addressed to you
   agents-room who                                        participants, roles, presence and status
   agents-room status "<what you are doing>"

@@ -7,6 +7,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { startMockServer, type MockServer } from "../../core/test-support/mock-server.js";
 import { Lincor, UserError } from "../src/service.js";
+import { formatTime } from "../src/format.js";
 import { createMcpServer } from "../src/mcp.js";
 import { editHooks, removeTomlSection } from "../src/install.js";
 import { claudePluginFiles, codexMcpToml } from "../src/templates.js";
@@ -320,6 +321,89 @@ describe("lincor service", () => {
     expect(people.split("\n").length).toBe(2);
     expect(other.projectDir).toBe(api.projectDir);
   });
+
+  it("returns what crossed with your own post instead of counting it as read (regression)", async () => {
+    const ali = dev("crossali");
+    const bob = dev("crossbob");
+    const { link } = ali.lincor().create({ about: "Crossed messages" }).data as { link: string };
+    await ali.lincor().send("hello");
+    await bob.lincor().join(link, { role: "unity" });
+    await ali.lincor().read();
+
+    await bob.lincor().send("@crossali do NOT delete the preview record");
+    const sent = (await ali.lincor().send("starting the cleanup")).text;
+    expect(sent).toMatch(/^Sent msg [0-9a-f]{8} /);
+    expect(sent).toMatch(/Addressed to you \(★\) and not shown to you before this post \(1\); check that your post still stands:\n★ #\d+ .*do NOT delete the preview record$/);
+    expect((await ali.lincor().send("ok, keeping it")).text).not.toContain("★");
+    expect(await ali.lincor().pendingForMe()).toEqual([]);
+    expect((await ali.lincor().read()).text).toBe("Nothing new since you last read.");
+
+    // What a hook already announced is not repeated; a task update and a contract report crossed messages too.
+    await bob.lincor().send("@crossali second thought");
+    expect(await ali.lincor().pendingForMe()).toHaveLength(1);
+    expect((await ali.lincor().send("got it")).text).not.toContain("★");
+    await bob.lincor().send("@crossali third");
+    expect((await ali.lincor().artifactPut("notes", { content: "v1" })).text).toMatch(/version 1\.\n\nAddressed to you .*\n★ .*third$/);
+  });
+
+  it("a briefing lists everything unread for you and leaves what it did not show unread (regression)", async () => {
+    const ali = dev("briefali");
+    const bob = dev("briefbob");
+    const { link } = ali.lincor().create({ about: "Briefing cursors" }).data as { link: string };
+    await ali.lincor().send("hello");
+    await bob.lincor().join(link, { role: "unity" });
+    await ali.lincor().read();
+
+    await bob.lincor().send("@briefali early question");
+    for (let i = 0; i < 12; i++) await bob.lincor().send(`chatter ${i}`);
+    const brief = (await ali.lincor().brief()).text;
+    expect(brief).toMatch(/Unread for you \(★\), besides the recent messages below \(1\):\n★ #\d+ .*early question\n\nRecent messages \(10 of 14\):/);
+    expect(brief).toContain("2 more unread messages are not shown here and stay unread: agents-room read");
+    expect(await ali.lincor().pendingForMe()).toEqual([]); // the briefing announced it
+    const read = (await ali.lincor().read()).text;
+    expect(read).toMatch(/^13 new events, 1 for you \(★\):/);
+    expect(read).toContain("chatter 0");
+
+    // A briefing that showed every unread message counts as reading them. Joining again is such a briefing.
+    await bob.lincor().send("one more");
+    expect((await ali.lincor().brief()).text).not.toContain("stay unread");
+    expect((await ali.lincor().read()).text).toBe("Nothing new since you last read.");
+    await bob.lincor().send("@briefali before the rejoin");
+    for (let i = 0; i < 11; i++) await bob.lincor().send(`later ${i}`);
+    const rejoined = (await ali.lincor().join(link, {})).text;
+    expect(rejoined).toMatch(/Unread for you \(★\), besides the recent messages below \(1\):\n★ #\d+ .*before the rejoin/);
+    expect((await ali.lincor().read()).text).toMatch(/^12 new events, 1 for you/);
+    // A first join starts from here: the history is not unread.
+    const late = dev("brieflate");
+    expect((await late.lincor().join(link, {})).text).not.toContain("Unread for you");
+    expect((await late.lincor().read()).text).toBe("Nothing new since you last read.");
+  });
+
+  it("reads a long backlog oldest first, a page at a time, without dropping anything (regression)", async () => {
+    const ali = dev("pageali");
+    const bob = dev("pagebob");
+    const { link } = ali.lincor().create({ about: "Paging" }).data as { link: string };
+    await ali.lincor().send("hello");
+    await bob.lincor().join(link, { role: "unity" });
+    await ali.lincor().read();
+
+    await bob.lincor().send("@pageali oldest of many");
+    for (let i = 0; i < 6; i++) await bob.lincor().send(`noise ${i}`);
+    // --all shows the latest events; it is not a read while older unread ones are left out.
+    expect((await ali.lincor().read({ all: true, limit: 2 })).text).toMatch(/^Last 2 events:\n.*noise 4\n.*noise 5$/);
+    const first = (await ali.lincor().read({ limit: 5 })).text;
+    expect(first).toMatch(/^The oldest 5 of 7 new events, 1 for you \(★\):\n★ #\d+ .*oldest of many\n/);
+    expect(first).toMatch(/noise 3\n\n2 more unread events \(0 for you\): run agents-room read again for the next ones\.$/);
+    const second = (await ali.lincor().read({ limit: 5 })).text;
+    expect(second).toMatch(/^2 new events, 0 for you \(★\):\n.*noise 4\n.*noise 5$/);
+    expect((await ali.lincor().read()).text).toBe("Nothing new since you last read.");
+  });
+
+  it("prints event times in UTC, with the date from the same clock (regression)", () => {
+    const now = Date.UTC(2026, 10, 4, 1, 0);
+    expect(formatTime(Date.UTC(2026, 10, 3, 21, 36), now)).toBe("2026-11-03 21:36Z");
+    expect(formatTime(Date.UTC(2026, 10, 4, 0, 5), now)).toBe("00:05Z");
+  });
 });
 
 describe("CLI binary", () => {
@@ -393,6 +477,30 @@ describe("hooks", () => {
     expect(start.hookSpecificOutput.additionalContext).toContain("Agents secure chat rooms");
     expect((await unity.cli(["hook", "stop"], "not json")).code).toBe(0);
     expect((await dev("no-rooms").cli(["hook", "session-start"], "{}")).out).toBe("");
+  });
+
+  it("session start counts a briefing as delivered only when it went out whole (regression)", async () => {
+    const fe = dev("start-fe");
+    const unity = dev("start-unity");
+    const { link } = fe.lincor().create().data as { link: string };
+    await fe.lincor().send("hi");
+    await unity.lincor().join(link, { role: "unity" });
+    const hook = async (event: string) => {
+      const out = (await unity.cli(["hook", event], JSON.stringify({ session_id: "s2", cwd: unity.project }))).out;
+      return out ? (JSON.parse(out).hookSpecificOutput.additionalContext as string) : "";
+    };
+
+    // A message with its own "Next:" line does not cut the briefing short; what the briefing showed is not announced again.
+    await fe.lincor().send("@unity the plan\nNext: ship it TAIL-MARK");
+    expect(await hook("session-start")).toContain("TAIL-MARK");
+    expect(await hook("user-prompt-submit")).toBe("");
+
+    await fe.lincor().send(`@unity runbook ${"x".repeat(9500)} END-OF-RUNBOOK`);
+    const cut = await hook("session-start");
+    expect(cut.length).toBeLessThanOrEqual(9000);
+    expect(cut).toMatch(/\(cut: too long for a session start\. chat_read shows everything unread\.\)$/);
+    expect(cut).not.toContain("END-OF-RUNBOOK");
+    expect(await hook("user-prompt-submit")).toContain("END-OF-RUNBOOK");
   });
 
   it("does not hold headless sessions open: the watcher exits at once when unattended", async () => {

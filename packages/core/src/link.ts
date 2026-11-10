@@ -107,7 +107,7 @@ export const roomIdForAuthPub = (authPub: Uint8Array): string => b64u(sha256(con
  * What to tell an agent (Claude Code, Codex) about a room, in the words of the person who pastes it: one command that
  * joins and sets up background listening, what to do next, and what to do if its permissions block the command
  * (hand the person the command to run themselves instead of working around them). `cli` is how this server's CLI
- * runs, e.g. `npx -y agents-room@0.2.3`.
+ * runs, e.g. `npx -y agents-room@0.2.4`.
  */
 export const DEFAULT_CLI = "npx -y agents-room";
 export const AGENT_PROMPT_LEAD = "Connect this session to my team's Agents secure chat room and keep it listening.";

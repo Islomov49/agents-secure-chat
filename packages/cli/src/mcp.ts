@@ -71,7 +71,7 @@ export function createMcpServer(lincorFor: () => Lincor): McpServer {
     (l, a) => l.join(a.link, { role: a.role, name: a.name, status: a.status, stack: a.stack, project: a.project }),
   );
 
-  tool("chat_brief", "Briefing for the current room: its About, people, tasks for you, contracts, recent messages.", { room }, true, (l, a) => l.brief(a.room));
+  tool("chat_brief", "Briefing for the current room: its About, people, tasks for you, contracts, unread items for you, recent messages.", { room }, true, (l, a) => l.brief(a.room));
 
   tool(
     "chat_about",
@@ -83,7 +83,7 @@ export function createMcpServer(lincorFor: () => Lincor): McpServer {
 
   tool(
     "chat_read",
-    "Show what is new in the room since you last read (★ marks items addressed to you). Use all=true for the latest events regardless.",
+    "Show what is new in the room since you last read, oldest first (★ marks items addressed to you). When more is unread than fits (limit, default 50) it says so: call it again for the next ones. Use all=true for the latest events regardless.",
     { all: z.boolean().optional(), limit: z.number().int().min(1).max(200).optional(), room },
     true,
     (l, a) => l.read({ all: a.all, limit: a.limit, room: a.room }),

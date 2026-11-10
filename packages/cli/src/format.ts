@@ -5,12 +5,17 @@ export type Surface = "cli" | "mcp";
 
 export const shortCid = (cid: string): string => displayId(cid);
 
-const time = (ms: number): string => {
-  const d = new Date(ms);
-  const sameDay = new Date().toDateString() === d.toDateString();
-  const hm = d.toTimeString().slice(0, 5);
-  return sameDay ? hm : `${d.toISOString().slice(0, 10)} ${hm}`;
+/**
+ * Event times in UTC, marked "Z": agents on machines in different time zones quote these to each other, so the date
+ * and the time must come from the same clock and say which one.
+ */
+export const formatTime = (ms: number, now = Date.now()): string => {
+  const iso = new Date(ms).toISOString();
+  const day = iso.slice(0, 10);
+  const hm = `${iso.slice(11, 16)}Z`;
+  return day === new Date(now).toISOString().slice(0, 10) ? hm : `${day} ${hm}`;
 };
+const time = (ms: number): string => formatTime(ms);
 
 const clip = (text: string, max: number): string => {
   const flat = text.replace(/\s+/g, " ").trim();
@@ -166,6 +171,26 @@ export interface BriefingOptions {
   /** The agent's client ("claude-code", "codex", …) and whether hooks deliver messages (an installed integration). */
   client?: string;
   hooks?: boolean;
+  /** The reader's read cursor. Unread events for them are listed even when they fall outside the recent messages. */
+  unreadAfter?: number;
+}
+
+const RECENT_MESSAGES = 10;
+const isChatter = (e: RoomEvent): boolean => e.type === "message" || e.type === "file";
+
+/**
+ * What a briefing owes a reader who last read at `after`, beyond its recent messages: the unread events addressed to
+ * them (`forMe`, which it lists) and how many other unread messages it leaves out (`hidden`; the reader has not seen
+ * those, so the briefing must not count as reading them). Tasks and About are left out: the briefing shows their
+ * current state.
+ */
+export function briefingUnread(session: RoomSession, after: number, recentCount = RECENT_MESSAGES): { forMe: RoomEvent[]; hidden: number } {
+  const state = session.state;
+  const me = session.identity.id;
+  const recent = new Set(state.events.filter(isChatter).slice(-recentCount));
+  const unread = state.events.filter((e) => e.seq > after && e.sender !== me && !recent.has(e));
+  const forMe = unread.filter((e) => e.type !== "task.create" && e.type !== "room.meta" && state.isAddressedTo(e, me));
+  return { forMe, hidden: unread.filter((e) => isChatter(e) && !forMe.includes(e)).length };
 }
 
 /**
@@ -214,10 +239,17 @@ export function briefing(session: RoomSession, options: BriefingOptions): string
   if (state.artifacts.size) {
     out.push(`Contracts: ${[...state.artifacts.values()].map((a) => `${a.name} v${a.versions.length}`).join(", ")}`);
   }
-  const chatter = state.events.filter((e) => e.type === "message" || e.type === "file");
-  const recent = chatter.slice(-(options.recent ?? 10));
+  const chatter = state.events.filter(isChatter);
+  const recent = chatter.slice(-(options.recent ?? RECENT_MESSAGES));
+  const unread = options.unreadAfter === undefined ? { forMe: [], hidden: 0 } : briefingUnread(session, options.unreadAfter, options.recent);
+  if (unread.forMe.length) {
+    out.push("", `Unread for you (★), besides the recent messages below (${unread.forMe.length}):\n${unread.forMe.map((e) => formatEvent(state, e, me)).join("\n")}`);
+  }
   if (recent.length) {
     out.push("", `Recent messages (${recent.length} of ${chatter.length}):\n${recent.map((e) => formatEvent(state, e, me)).join("\n")}`);
+  }
+  if (unread.hidden) {
+    out.push(`${unread.hidden} more unread message${unread.hidden === 1 ? " is" : "s are"} not shown here and stay${unread.hidden === 1 ? "s" : ""} unread: ${h.read}`);
   }
   out.push(
     "",

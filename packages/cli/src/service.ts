@@ -31,7 +31,7 @@ import {
   type TaskStatus,
 } from "@lincor/core";
 import { autoProfile, mergeProfile, projectDirFor, type ProfileOverrides } from "./profile.js";
-import { briefing, formatAbout, formatEvent, formatPeople, formatTask, shortCid, type Surface } from "./format.js";
+import { briefing, briefingUnread, formatAbout, formatEvent, formatPeople, formatTask, shortCid, type Surface } from "./format.js";
 import { rulesText } from "./rules.js";
 import { Store, lincorHome, type Autonomy, type ListenMode, type MemberRecord, type RoomRecord } from "./store.js";
 import { cliCommand, selfCommand } from "./version.js";
@@ -49,6 +49,12 @@ export class UserError extends Error {
 export interface Result {
   text: string;
   data?: unknown;
+}
+
+/** How far a briefing covered the room: up to `seq`, and whether it showed every unread message (`complete`). */
+export interface BriefingCursor {
+  seq: number;
+  complete: boolean;
 }
 
 export interface LincorOptions {
@@ -281,6 +287,43 @@ export class Lincor {
     this.saveMember(o.room, o.member);
   }
 
+  /** Events addressed to us that no read, wait, briefing or hook has shown yet. */
+  private unseenForMe(o: Opened): RoomEvent[] {
+    const me = o.session.identity.id;
+    const since = Math.max(o.member.notifiedSeq, o.member.readSeq);
+    return o.session.state.events.filter((e) => e.seq > since && o.session.state.isAddressedTo(e, me));
+  }
+
+  /**
+   * Closes our own post: the room counts as read from here, so whatever was addressed to us and not shown yet is
+   * returned with the post's result. Without this a message that crossed with ours would never reach the agent.
+   */
+  private afterPost(o: Opened): string {
+    const hits = this.unseenForMe(o);
+    this.markRead(o);
+    if (!hits.length) return "";
+    const me = o.session.identity.id;
+    return `\n\nAddressed to you (★) and not shown to you before this post (${hits.length}); check that your post still stands:\n${hits.map((e) => formatEvent(o.session.state, e, me)).join("\n")}`;
+  }
+
+  /**
+   * A briefing lists every unread event addressed to us, so those count as announced. It counts as reading the room
+   * only when it left no unread message out; otherwise the next read still shows them.
+   */
+  private briefingCursor(o: Opened): BriefingCursor {
+    return { seq: o.session.state.lastSeq, complete: briefingUnread(o.session, o.member.readSeq).hidden === 0 };
+  }
+
+  /** Moves the cursors once a briefing has reached the agent (hooks call this only when they delivered it whole). */
+  markBriefed(roomId: string, cursor: BriefingCursor): void {
+    const room = this.store.getRoom(roomId);
+    const member = room && this.store.getMember(roomId, this.projectDir);
+    if (!room || !member) return;
+    member.notifiedSeq = Math.max(member.notifiedSeq, cursor.seq);
+    if (cursor.complete) member.readSeq = Math.max(member.readSeq, cursor.seq);
+    this.saveMember(room, member);
+  }
+
   // ---------- commands ----------
 
   /** Creates a room locally. No network: the room appears on the server with the first event. */
@@ -349,8 +392,18 @@ export class Lincor {
       this.saveMember(o.room, o.member);
     }
     const presence = await o.session.client.presence().catch(() => []);
-    const text = briefing(o.session, { ...this.listenContext(profile.client), autonomy: o.member.autonomy, presence, justJoined: true });
-    this.markRead(o);
+    // A first join starts from here: the history counts as read. Joining again is a briefing for a returning member.
+    const returning = o.member.readSeq > 0;
+    const cursor = this.briefingCursor(o);
+    const text = briefing(o.session, {
+      ...this.listenContext(profile.client),
+      autonomy: o.member.autonomy,
+      presence,
+      justJoined: true,
+      ...(returning ? { unreadAfter: o.member.readSeq } : {}),
+    });
+    if (returning) this.markBriefed(o.room.roomId, cursor);
+    else this.markRead(o);
     // PRD §5.2: join prints the rules too; without a plugin nothing else delivers them.
     const rules = `\n\nRules (they apply in every room):\n${rulesText()}`;
     const extra =
@@ -374,12 +427,14 @@ export class Lincor {
     return `\n\nOptional, ask your user first: for chat tools and background listening in every new session, run ${this.self} install ${target}.`;
   }
 
-  async brief(selector?: string): Promise<Result> {
+  /** `mark: false` leaves the cursors alone; the caller reports delivery with `markBriefed` (see hooks). */
+  async brief(selector?: string, options: { mark?: boolean } = {}): Promise<Result> {
     const o = await this.open(selector);
     const presence = await o.session.client.presence().catch(() => []);
-    const text = briefing(o.session, { ...this.listenContext(o.member.profile?.client), autonomy: o.member.autonomy, presence });
-    this.markRead(o);
-    return { text };
+    const cursor = this.briefingCursor(o);
+    const text = briefing(o.session, { ...this.listenContext(o.member.profile?.client), autonomy: o.member.autonomy, presence, unreadAfter: o.member.readSeq });
+    if (options.mark !== false) this.markBriefed(o.room.roomId, cursor);
+    return { text, data: cursor };
   }
 
   async profile(overrides: ProfileOverrides, selector?: string): Promise<Result> {
@@ -416,20 +471,30 @@ export class Lincor {
     this.checkMentions(o, text);
     const first = await this.ensureIntroduced(o);
     const event = await this.guard(o, () => o.session.say(text, { replyTo: options.replyTo }));
-    this.markRead(o);
-    return { text: `Sent msg ${shortCid(event.cid)} (#${event.seq}).${this.aboutNudge(o, first)}`, data: { cid: event.cid, seq: event.seq } };
+    return { text: `Sent msg ${shortCid(event.cid)} (#${event.seq}).${this.aboutNudge(o, first)}${this.afterPost(o)}`, data: { cid: event.cid, seq: event.seq } };
   }
 
   async read(options: { all?: boolean; limit?: number; room?: string } = {}): Promise<Result> {
     const o = await this.open(options.room);
     const me = o.session.identity.id;
     const events = o.session.state.events.filter((e) => e.sender !== me);
-    const fresh = options.all ? events.slice(-(options.limit ?? 30)) : events.filter((e) => e.seq > o.member.readSeq).slice(-(options.limit ?? 50));
-    this.markRead(o);
+    const unread = events.filter((e) => e.seq > o.member.readSeq);
+    // Unread events come oldest first, a page at a time; --all shows the latest ones whatever was read.
+    const fresh = options.all ? events.slice(-Math.max(1, options.limit ?? 30)) : unread.slice(0, Math.max(1, options.limit ?? 50));
+    const rest = options.all ? [] : unread.slice(fresh.length);
+    // The cursor passes only what is shown: the next read continues after this page, and --all counts as reading
+    // only when every unread event was among the ones it showed.
+    if (rest.length) this.markRead(o, fresh.at(-1)!.seq);
+    else if (!options.all || unread.length <= fresh.length) this.markRead(o);
     if (!fresh.length) return { text: options.all ? "The room is empty." : "Nothing new since you last read." };
-    const forMe = fresh.filter((e) => o.session.state.isAddressedTo(e, me)).length;
-    const head = options.all ? `Last ${fresh.length} events` : `${fresh.length} new event${fresh.length === 1 ? "" : "s"}, ${forMe} for you (★)`;
-    return { text: `${head}:\n${fresh.map((e) => formatEvent(o.session.state, e, me)).join("\n")}` };
+    const starred = (list: RoomEvent[]) => list.filter((e) => o.session.state.isAddressedTo(e, me)).length;
+    const head = options.all
+      ? `Last ${fresh.length} events`
+      : `${rest.length ? `The oldest ${fresh.length} of ${unread.length}` : fresh.length} new event${unread.length === 1 ? "" : "s"}, ${starred(fresh)} for you (★)`;
+    const more = rest.length
+      ? `\n\n${rest.length} more unread event${rest.length === 1 ? "" : "s"} (${starred(rest)} for you): ${this.cmd("run agents-room read again", "call chat_read again")} for the next ones.`
+      : "";
+    return { text: `${head}:\n${fresh.map((e) => formatEvent(o.session.state, e, me)).join("\n")}${more}`, data: { shown: fresh.length, unread: rest.length } };
   }
 
   /** Blocks until something addressed to us arrives (or anything, with `all`), up to `timeout` seconds. */
@@ -477,10 +542,9 @@ export class Lincor {
         ...(task.refs?.length ? { refs: task.refs } : {}),
       }),
     );
-    this.markRead(o);
     const link = linkFor(o.room.origin, o.room.key);
     return {
-      text: `Created task ${shortCid(event.cid)} "${task.title}"${assignee ? ` for ${assignee}` : ""}.\nIf the assignee is not in the room yet, give your user this invite to forward:\n${inviteText(link, cliCommand(this.env))}${this.aboutNudge(o, first)}`,
+      text: `Created task ${shortCid(event.cid)} "${task.title}"${assignee ? ` for ${assignee}` : ""}.\nIf the assignee is not in the room yet, give your user this invite to forward:\n${inviteText(link, cliCommand(this.env))}${this.aboutNudge(o, first)}${this.afterPost(o)}`,
       data: { task: event.cid, link },
     };
   }
@@ -493,8 +557,7 @@ export class Lincor {
     const task = o.session.state.findTask(id);
     if (!task) throw new UserError(`No task matches "${id}". ${this.cmd("agents-room task list", "chat_tasks")} shows task ids.`);
     await this.guard(o, () => o.session.updateTask(task.id, normalized, note));
-    this.markRead(o);
-    return { text: `Task ${shortCid(task.id)} "${task.title}" is now ${normalized.replace("_", " ")}.` };
+    return { text: `Task ${shortCid(task.id)} "${task.title}" is now ${normalized.replace("_", " ")}.${this.afterPost(o)}` };
   }
 
   async tasks(options: { mine?: boolean; all?: boolean; room?: string } = {}): Promise<Result> {
@@ -547,9 +610,8 @@ export class Lincor {
         failed.push(`Not shared: "${basename(full)}": ${error instanceof Error ? error.message : String(error)}`);
       }
     }
-    this.markRead(o);
     if (!shared.length) throw new UserError(failed.join("\n"));
-    return { text: [...shared, ...failed].join("\n") + (failed.length ? `\n${shared.length} of ${files.length} files shared.` : "") };
+    return { text: [...shared, ...failed].join("\n") + (failed.length ? `\n${shared.length} of ${files.length} files shared.` : "") + this.afterPost(o) };
   }
 
   private findFile(o: Opened, id: string): EventOf<"file"> {
@@ -590,8 +652,7 @@ export class Lincor {
     await this.ensureIntroduced(o);
     await this.guard(o, () => o.session.putArtifact(name, bytes, { note }));
     const version = o.session.state.artifacts.get(name)?.versions.length ?? 1;
-    this.markRead(o);
-    return { text: `Contract "${name}" is now at version ${version}.` };
+    return { text: `Contract "${name}" is now at version ${version}.${this.afterPost(o)}` };
   }
 
   async artifactGet(name: string, options: { version?: number; out?: string; room?: string } = {}): Promise<Result> {
@@ -699,8 +760,7 @@ export class Lincor {
     }
     await this.ensureIntroduced(o);
     if (o.session.state.meta.description !== clean) await this.guard(o, () => o.session.setMeta({ description: clean }));
-    this.markRead(o);
-    return { text: `About this room is now:\n${clean}\nEveryone in the room sees it in their briefing.` };
+    return { text: `About this room is now:\n${clean}\nEveryone in the room sees it in their briefing.${this.afterPost(o)}` };
   }
 
   async rename(name: string, selector?: string): Promise<Result> {
@@ -751,8 +811,7 @@ export class Lincor {
         continue;
       }
       const me = o.session.identity.id;
-      const since = Math.max(o.member.notifiedSeq, o.member.readSeq);
-      const hits = o.session.state.events.filter((e) => e.seq > since && o.session.state.isAddressedTo(e, me));
+      const hits = this.unseenForMe(o);
       if (hits.length) out.push({ room: o.room, lines: hits.map((e) => formatEvent(o.session.state, e, me)), seq: o.session.state.lastSeq });
       if (options.mark !== false && hits.length) {
         o.member.notifiedSeq = o.session.state.lastSeq;
