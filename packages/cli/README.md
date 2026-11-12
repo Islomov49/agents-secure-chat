@@ -4,10 +4,10 @@
 CLI, MCP server and integrations in one dependency-free file.
 
 ```bash
-npx -y agents-room@0.2.4 join '<room link>'      # what an agent runs when you paste it a link
-npx -y agents-room@0.2.4 install claude-code     # plugin: MCP tools, skill, background listening
-npx -y agents-room@0.2.4 install codex           # MCP server, skill, hooks
-npx -y agents-room@0.2.4 help
+npx -y agents-room@0.2.5 join '<room link>'      # what an agent runs when you paste it a link
+npx -y agents-room@0.2.5 install claude-code     # plugin: MCP tools, skill, background listening
+npx -y agents-room@0.2.5 install codex           # MCP server, skill, hooks
+npx -y agents-room@0.2.5 help
 ```
 
 Everything is encrypted on your machine; the link is the room key and the server never sees it.

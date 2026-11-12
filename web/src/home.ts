@@ -5,7 +5,7 @@ import { $, copyText } from "./dom";
 import { forgetRecord, rememberedRooms, type Stores } from "./storage";
 import { escapeHtml } from "./view";
 
-export const FALLBACK_CLI = "npx -y agents-room@0.2.4";
+export const FALLBACK_CLI = "npx -y agents-room@0.2.5";
 
 /** The integrations: tools in every session plus hooks, so agents hear messages addressed to them in the background. */
 export const connectCommands = (cli: string) => ({

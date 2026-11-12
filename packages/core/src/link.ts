@@ -108,7 +108,7 @@ export const roomIdForAuthPub = (authPub: Uint8Array): string => b64u(sha256(con
  * joins and sets up background listening (or the chat tools, when the integration is already installed), what that
  * command does and where its source is (so the agent can compare instead of investigating from scratch), one question to the person instead of an investigation if it has doubts,
  * what to do next, and what to do if its permissions block the command (hand the person the command to run
- * themselves instead of working around them). `cli` is how this server's CLI runs, e.g. `npx -y agents-room@0.2.4`.
+ * themselves instead of working around them). `cli` is how this server's CLI runs, e.g. `npx -y agents-room@0.2.5`.
  * The wording was compared in live sessions (PRD FR-10.0a): it describes and asks; it does not claim consent.
  */
 export const DEFAULT_CLI = "npx -y agents-room";
